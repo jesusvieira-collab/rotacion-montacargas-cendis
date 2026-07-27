@@ -1,0 +1,2098 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rotación Alma-Rep · Farmatodo CENDIS</title>
+
+<script type="module">
+  import { initializeApp }
+    from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc, onSnapshot }
+    from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCrFXzXL1hoDYRrmXwILK4sSanJ28acOxA",
+    authDomain: "cendis-noc26.firebaseapp.com",
+    projectId: "cendis-noc26",
+    storageBucket: "cendis-noc26.firebasestorage.app",
+    messagingSenderId: "154600562289",
+    appId: "1:154600562289:web:0fcbfa4f1adcb4e2f805d0"
+  };
+  const fbApp = initializeApp(firebaseConfig);
+  const db_fb = getFirestore(fbApp);
+
+  window.fbSave = async (col, id, data) => {
+    try { await setDoc(doc(db_fb, col, id), { payload: JSON.stringify(data) }); }
+    catch(e) { console.warn('fbSave error:', e); }
+  };
+  window.fbLoad = async (col, id) => {
+    try { const snap = await getDoc(doc(db_fb, col, id));
+      if (snap.exists()) return JSON.parse(snap.data().payload); }
+    catch(e) { console.warn('fbLoad error:', e); }
+    return null;
+  };
+  window.fbListen = (col, id, callback) =>
+    onSnapshot(doc(db_fb, col, id), snap => {
+      if (snap.exists()) { try { callback(JSON.parse(snap.data().payload)); } catch(e) {} }
+    });
+  window.fbSetStatus = (online) => {
+    const dot = document.getElementById('fb-dot');
+    const txt = document.getElementById('fb-txt');
+    if (dot) dot.style.background = online ? '#22c55e' : '#ef4444';
+    if (txt) txt.textContent = online ? '☁ En línea' : '○ Sin conexión';
+  };
+  window.__fbReady = true;
+</script>
+
+<style>
+  :root{
+    --navy:#003087; --navy2:#0d3472; --blue:#4a86e8; --bg:#f3f5fa;
+    --card:#ffffff; --line:#dbe1ee; --gray:#eef0f4; --grayline:#c9ccd3;
+    --green:#16a766; --red:#e66550; --amber:#eaa041; --text:#1a2233;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);}
+  header{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:16px 20px;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,.15);}
+  header h1{margin:0;font-size:18px;font-weight:700;}
+  header p{margin:2px 0 0;font-size:12px;opacity:.85;}
+  nav.tabs{display:flex;gap:6px;overflow-x:auto;padding:10px 14px;background:#fff;border-bottom:1px solid var(--line);
+    scrollbar-width:none;-webkit-overflow-scrolling:touch;position:sticky;top:64px;z-index:40;}
+  nav.tabs::-webkit-scrollbar{display:none;}
+  nav.tabs button{flex:none;border:none;background:var(--gray);color:var(--navy);font-weight:700;font-size:13px;
+    padding:9px 14px;border-radius:20px;cursor:pointer;white-space:nowrap;}
+  nav.tabs button.active{background:var(--navy);color:#fff;}
+  main{max-width:1100px;margin:0 auto;padding:16px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px;}
+  .card h2{margin:0 0 4px;font-size:15px;color:var(--navy);}
+  .card .sub{font-size:12px;color:#667;margin-bottom:12px;}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
+  label{font-size:12px;font-weight:700;color:#445;display:block;margin-bottom:4px;}
+  input[type=text],input[type=number],input[type=date],select{
+    border:1px solid var(--grayline);border-radius:8px;padding:8px 10px;font-size:13px;min-height:36px;width:100%;}
+  button.btn{background:var(--navy);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:13px;
+    font-weight:700;cursor:pointer;min-height:36px;}
+  button.btn.secondary{background:var(--gray);color:var(--navy);}
+  button.btn.danger{background:#fde8e6;color:#b5311f;}
+  button.btn.small{padding:6px 10px;font-size:12px;min-height:30px;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  table th{background:var(--navy);color:#fff;padding:8px 6px;text-align:center;position:sticky;top:0;}
+  table td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:center;}
+  table tr.dayhead td{background:var(--navy2);color:#fff;font-weight:700;}
+  table tr.gray td{background:var(--gray);}
+  table tr.alta td{background:#eef2fb;}
+  .tablewrap{overflow-x:auto;}
+
+  /* ===== Formato idéntico a la plantilla original ===== */
+  table.plantilla{border-collapse:collapse;width:100%;min-width:640px;font-size:12px;}
+  table.plantilla th, table.plantilla td{border:1px solid #7f9bc9;padding:5px 6px;text-align:center;
+    vertical-align:middle;white-space:nowrap;}
+  table.plantilla th{background:var(--navy);color:#fff;font-weight:700;font-size:11.5px;letter-spacing:.3px;}
+  table.plantilla th.titulo{background:var(--navy2);font-size:13px;}
+  table.plantilla tr.dayhead td{background:var(--navy);color:#fff;font-weight:700;letter-spacing:.5px;}
+  table.plantilla td.pasillo{background:#dbe5f6;font-weight:700;color:var(--navy);width:74px;}
+  table.plantilla td.dm{font-weight:700;}
+  table.plantilla td.gris{background:#d9d9d9;}
+  table.plantilla td.ea{font-weight:700;font-size:11px;position:relative;text-align:right;padding-right:8px;}
+  table.plantilla td.ea .ealabel{display:block;font-weight:400;font-size:9px;color:#6b7280;letter-spacing:.3px;}
+  /* casillas con problema: repetición de pasillo, día libre, montacargas duplicado */
+  table.plantilla .conflicto{background:#fde8e6;color:#b5311f;border-radius:4px;padding:1px 5px;
+    font-weight:700;box-shadow:inset 0 0 0 1.5px #e07a6b;}
+  table.plantilla select{border:1px solid var(--grayline);border-radius:6px;padding:3px 4px;
+    font-size:11.5px;font-weight:700;min-height:28px;width:100%;max-width:150px;background:#fff;}
+  table.plantilla select.conflicto{border-color:#b5311f;background:#fde8e6;}
+  table.plantilla td.dm select{max-width:145px;}
+  .pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;}
+  .pill.ok{background:#e4f7ee;color:#0d7a4a;}
+  .pill.warn{background:#fdeee0;color:#a15c00;}
+  .pill.off{background:#f1f1f4;color:#888;}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
+  select.status-libre{background:#fdeee0;} select.status-vac{background:#fde8e6;}
+  .tag{font-size:10px;background:var(--gray);border-radius:6px;padding:2px 6px;margin-left:6px;color:#556;}
+  #fb-status{position:fixed;bottom:12px;right:12px;z-index:9999;background:rgba(0,20,60,.85);color:#fff;
+    font-size:10px;font-weight:700;padding:5px 12px;border-radius:20px;display:flex;align-items:center;gap:6px;}
+  #fb-dot{width:7px;height:7px;border-radius:50%;background:#f59e0b;}
+  .msg{font-size:12px;border-radius:8px;padding:8px 10px;margin-top:8px;}
+  .msg.ok{background:#e4f7ee;color:#0d7a4a;}
+  .msg.err{background:#fde8e6;color:#b5311f;}
+  .flexrow{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+  small.hint{color:#778;font-size:11px;}
+
+  @media (max-width: 768px) {
+    nav.tabs{top:58px;}
+    .grid3, .grid5{grid-template-columns:1fr 1fr;}
+    table{display:block;overflow-x:auto;white-space:nowrap;}
+    button, input, select { min-height:38px; }
+    .card{padding:12px;}
+  }
+  @media (max-width: 380px){
+    .grid3, .grid5{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🔄 Rotación Alma-Rep · Montacargas</h1>
+  <p>CENDIS Farmatodo — genera la rotación semanal y la asignación de montacargas</p>
+</header>
+
+<nav class="tabs">
+  <button class="tab-btn active" data-tab="personal">👥 Personal</button>
+  <button class="tab-btn" data-tab="config">⚙️ Reglas</button>
+  <button class="tab-btn" data-tab="semana">📅 Días libres</button>
+  <button class="tab-btn" data-tab="resultado">📋 Rotación</button>
+  <button class="tab-btn" data-tab="historial">🗂 Historial</button>
+</nav>
+
+<main>
+
+<!-- ===================== TAB PERSONAL ===================== -->
+<section id="tab-personal">
+  <div id="aviso-migracion"></div>
+  <div class="card">
+    <h2>Personal rotativo</h2>
+    <div class="sub">Estas son las personas que rotan por O/S, pasillos 41-44, B.O. y Almacenar. Edita nombre, si tiene montacargas propio, o desactívala si ya no trabaja (ej. reemplazos).</div>
+    <div class="tablewrap">
+      <table id="tbl-personal">
+        <thead><tr><th>Nombre (en la rotación)</th><th>Nombre en tu Excel</th><th>Montacargas propio</th><th title="Solo puede ir a las casillas grises (B.O. de pasillo 44 y Almacenar), no usa montacargas y rota entre esos 3 puestos">Traspaletista</th><th>Activo</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="row" style="margin-top:10px;">
+      <button class="btn secondary small" onclick="agregarPersona()">+ Agregar persona</button>
+      <button class="btn small" onclick="guardarConfig('Personal guardado')">💾 Guardar</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Estantería alta (fijos — no rotan)</h2>
+    <div class="sub">Cada posición puede tener 1 o 2 personas; si tiene 2, se alternan por día de la semana automáticamente (igual que Ramón/Yorddy en 12-13).</div>
+    <div class="tablewrap">
+      <table id="tbl-alta">
+        <thead><tr><th>Posición</th><th>Persona(s) — separadas por coma</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="row" style="margin-top:10px;">
+      <button class="btn small" onclick="guardarConfig('Estantería alta guardada')">💾 Guardar</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== TAB CONFIG / REGLAS ===================== -->
+<section id="tab-config" style="display:none;">
+  <div class="card">
+    <h2>Flota de montacargas</h2>
+    <div class="sub">Unidades excluidas (mantenimiento / overhauling) y unidades extra (repuesto) que se pueden prestar.</div>
+    <div class="grid3">
+      <div><label>Excluidas (mantenimiento)</label><input type="text" id="in-excluidas" placeholder="55,60,66,67"></div>
+      <div><label>Extra / repuesto</label><input type="text" id="in-extra" placeholder="44"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Reglas de la línea O/S</h2>
+    <div class="sub">Según la operación real: en O/S hay 3 personas — el combo de 2 comparte 1 montacargas (uno maneja, el otro confirma a pie), y la tercera (línea gris de O/S) usa uno individual.</div>
+    <label><input type="checkbox" id="chk-os-par" checked> El combo de 2 personas en O/S comparte 1 sola unidad</label><br>
+    <label><input type="checkbox" id="chk-os-individual" checked> La tercera persona de O/S (línea gris) sí necesita unidad propia</label>
+  </div>
+
+  <div class="card">
+    <h2>Fila gris de Pasillo 44</h2>
+    <div class="sub">Las posiciones "B.O. 01-14" y "B.O. 20-23" propias de Pasillo 44 no requieren montacargas (usan traspaleta / trabajo a pie). Su unidad, si la tienen, queda libre para prestar.</div>
+    <label><input type="checkbox" id="chk-fila-gris" checked> Pasillo 44 (fila gris) no necesita montacargas</label>
+  </div>
+
+  <div class="card">
+    <h2>Asignaciones fijas por persona</h2>
+    <div class="sub">Ej: Luingi Seijas siempre debe usar el equipo 65, sin importar el puesto que le toque.</div>
+    <div class="tablewrap">
+      <table id="tbl-fijas">
+        <thead><tr><th>Persona</th><th>Unidad fija</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="row" style="margin-top:10px;">
+      <button class="btn secondary small" onclick="agregarFija()">+ Agregar</button>
+      <button class="btn small" onclick="guardarConfig('Reglas guardadas')">💾 Guardar reglas</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== TAB SEMANA / DIAS LIBRES ===================== -->
+<section id="tab-semana" style="display:none;">
+  <div class="card">
+    <h2>Semana a generar</h2>
+    <div class="row">
+      <div><label>Lunes de esta semana</label><input type="date" id="in-fecha-lunes"></div>
+      <div><label>Etiqueta (opcional)</label><input type="text" id="in-etiqueta" placeholder="Ej: Semana 30"></div>
+    </div>
+    <div class="row" style="margin-top:10px;">
+      <label style="margin:0;"><input type="checkbox" class="chk-feriado" data-day="LUNES"> Lunes feriado</label>
+      <label style="margin:0;"><input type="checkbox" class="chk-feriado" data-day="MARTES"> Martes feriado</label>
+      <label style="margin:0;"><input type="checkbox" class="chk-feriado" data-day="MIERCOLES"> Miércoles feriado</label>
+      <label style="margin:0;"><input type="checkbox" class="chk-feriado" data-day="JUEVES"> Jueves feriado</label>
+      <label style="margin:0;"><input type="checkbox" class="chk-feriado" data-day="VIERNES"> Viernes feriado</label>
+    </div>
+    <small class="hint">Un día feriado no se reparte entre nadie (ni estantería alta): la rotación de ese día queda en blanco marcada FERIADO.</small>
+  </div>
+
+  <div class="card">
+    <h2>📥 Pegar desde tu Excel de Días Libres</h2>
+    <div class="sub">Copia el cuadro completo de tu Excel (incluyendo la fila de encabezados <b>CODIGO / APELLIDO / NOMBRE / LUNES...</b>) y pégalo aquí. La app lo lee, identifica a cada persona y llena la tabla de abajo sola.</div>
+    <textarea id="ta-pegado" rows="7" placeholder="Pega aquí el cuadro copiado de Excel (Ctrl+V)..."
+      style="width:100%;border:1px solid var(--grayline);border-radius:8px;padding:10px;font-family:monospace;font-size:12px;"></textarea>
+    <div class="row" style="margin-top:10px;">
+      <button class="btn" onclick="analizarPegado()">🔍 Analizar</button>
+      <button class="btn secondary small" onclick="document.getElementById('ta-pegado').value='';document.getElementById('preview-pegado').innerHTML='';">Limpiar</button>
+    </div>
+    <div id="preview-pegado"></div>
+  </div>
+
+  <div class="card">
+    <h2>Días libres / vacaciones / reposo</h2>
+    <div class="sub">Se llena sola al pegar el Excel de arriba, pero también puedes ajustar cualquier casilla a mano. Cualquier estado distinto de "Asiste" excluye a esa persona ese día.</div>
+    <div class="tablewrap">
+      <table id="tbl-libres">
+        <thead><tr><th>Persona</th><th>Lunes</th><th>Martes</th><th>Miércoles</th><th>Jueves</th><th>Viernes</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="row" style="margin-top:10px;">
+      <button class="btn secondary small" onclick="renderTablaLibres()">↻ Refrescar lista (si cambiaste el personal)</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="flexrow">
+      <div>
+        <h2 style="margin-bottom:0;">Generar</h2>
+        <div class="sub" style="margin-bottom:0;">Calcula automáticamente quién asiste, la rotación (sin repetir pasillo vs. semana pasada ni dentro de la semana) y los montacargas.</div>
+      </div>
+      <button class="btn" onclick="generarRotacion()">▶ Generar rotación</button>
+    </div>
+    <div id="gen-msg"></div>
+  </div>
+</section>
+
+<!-- ===================== TAB RESULTADO ===================== -->
+<section id="tab-resultado" style="display:none;">
+  <div class="card">
+    <div class="flexrow">
+      <h2 style="margin:0;">Resultado de la rotación</h2>
+      <div class="row" style="margin:0;">
+        <button class="btn secondary small" onclick="exportarPNG()">🖼 Descargar imagen (PNG)</button>
+        <button class="btn secondary small" onclick="exportarExcel()">⬇ Descargar Excel</button>
+        <button class="btn small" onclick="guardarSemanaHistorial()">💾 Guardar semana (para comparar la próxima)</button>
+      </div>
+    </div>
+    <div id="resultado-msg"></div>
+    <div id="resultado-tabla"></div>
+  </div>
+</section>
+
+<!-- ===================== TAB HISTORIAL ===================== -->
+<section id="tab-historial" style="display:none;">
+  <div class="card">
+    <h2>Semanas guardadas</h2>
+    <div class="sub">La rotación más reciente guardada aquí es la que se usa como "semana pasada" para no repetir pasillo el mismo día. Con <b>👁 Ver</b> la muestras en pantalla tal como se publicó, y puedes volver a descargarla en PNG o Excel.</div>
+    <div id="historial-lista"></div>
+  </div>
+</section>
+
+</main>
+
+<div id="fb-status">
+  <span id="fb-dot"></span>
+  <span id="fb-txt">Conectando...</span>
+</div>
+
+<script>
+/* ============================================================
+   MODELO DE DATOS POR DEFECTO (Rotación Alma-Rep · CENDIS)
+   ============================================================ */
+const DIAS = ['LUNES','MARTES','MIERCOLES','JUEVES','VIERNES'];
+
+// Definición fija de los 13 puestos rotativos y su área (para no repetir área)
+// area  = pasillo físico (regla estricta: no repetir pasillo en la semana)
+// rol   = tarea concreta dentro del pasillo. O/S y Pasillo 44 tienen 3 cupos
+//         cada uno, y cada cupo es una tarea distinta (el combo que comparte
+//         montacargas no hace lo mismo que la línea gris que arrastra paletas
+//         a las ventanas). Sirve como regla alternativa cuando la estricta es
+//         matemáticamente imposible — ver NIVELES más abajo.
+const SLOTS = [
+  {id:'os0',   area:'OS',  rol:'OS_PAR',   label:'O/S (1/2)'},
+  {id:'os1',   area:'OS',  rol:'OS_PAR',   label:'O/S (2/2)'},
+  {id:'os2',   area:'OS',  rol:'OS_GRIS',  label:'O/S (línea gris)'},
+  {id:'p41',   area:'P41', rol:'P41',      label:'Pasillo 41'},
+  {id:'p42a',  area:'P42', rol:'P42',      label:'Pasillo 42 (1/2)'},
+  {id:'p42b',  area:'P42', rol:'P42',      label:'Pasillo 42 (2/2)'},
+  {id:'p43',   area:'P43', rol:'P43',      label:'Pasillo 43'},
+  {id:'p44dm', area:'P44', rol:'P44_DM',   label:'Pasillo 44 (D/M)'},
+  {id:'bo1w',  area:'BO1W',rol:'BO1W',     label:'B.O. 01-14 (semana)'},
+  {id:'bo2w',  area:'BO2W',rol:'BO2W',     label:'B.O. 20-23 (semana)'},
+  {id:'p44bo1',area:'P44', rol:'P44_BO1',  label:'Pasillo 44 · B.O. 01-14 (fila gris)'},
+  {id:'p44bo2',area:'P44', rol:'P44_BO2',  label:'Pasillo 44 · B.O. 20-23 (fila gris)'},
+  {id:'almacenar',area:'ALMACENAR', rol:'ALMACENAR', label:'Almacenar'},
+  // Traspaletista: puesto propio (área aparte) que también entra en la
+  // rotación. Suma un destino más por día, lo que da holgura y reduce las
+  // repeticiones de pasillo. No usa montacargas: trabaja con traspaleta.
+  {id:'traspaletista',area:'TRASPALETA', rol:'TRASPALETA', label:'Traspaletista'},
+];
+
+// Puestos que por su naturaleza NO llevan montacargas (traspaleta / a pie).
+const SLOTS_SIN_MONTACARGAS = ['traspaletista'];
+
+// Sube cuando cambia el personal/reglas por defecto, para migrar lo guardado.
+const VERSION_CONFIG = 3;
+
+// "excel" = cómo identificar a esa persona en el Excel de Días Libres.
+// Deben ser TODOS los tokens necesarios para no confundirla con otra:
+// hay dos GONZALEZ (RAMON y JOSE) y dos JEFFERSON (SANCHEZ y PERDOMO).
+function defaultPersonal(){
+  return [
+    {nombre:'LUINGI',     unidad:null, excel:'SEIJAS'},
+    {nombre:'JIRMEN',     unidad:56,   excel:'MENDEZ'},
+    {nombre:'ANTONIO',    unidad:null, excel:'REINA'},
+    {nombre:'ARISTIDEZ',  unidad:null, excel:'RON'},
+    {nombre:'GOMEZ',      unidad:61,   excel:'GOMEZ JOSE'},
+    {nombre:'VICTOR G',   unidad:59,   excel:'GUZMAN'},
+    {nombre:'JOSE G',     unidad:null, excel:'GONZALEZ JOSE'},
+    {nombre:'NICOLAS',    unidad:57,   excel:'RAVELO'},
+    {nombre:'MARIO',      unidad:62,   excel:'MARTINEZ'},
+    {nombre:'MALAGUERA',  unidad:null, excel:'MALAGUERA'},
+    {nombre:'DANIEL',     unidad:null, excel:'URBANEJA'},
+    {nombre:'PERDOMO',    unidad:null, excel:'PERDOMO'},
+    {nombre:'FRANK',      unidad:null, excel:'VARELA'},
+    {nombre:'DARWIN',     unidad:63,   excel:'MORENO'},
+    {nombre:'ONOFRE',     unidad:58,   excel:'ANDRADE'},
+    // Traspaletista: solo puede ocupar las casillas grises (B.O. de pasillo 44
+    // y Almacenar). Al tener apenas 3 puestos posibles y 5 días laborables,
+    // queda exento de la regla de no repetir: rota entre esos 3.
+    // Traspaletista fijo: solo las casillas grises de Pasillo 44 (B.O. 01-14 y
+    // B.O. 20-23) y la casilla gris de traspaleta, debajo de quien almacena.
+    // Es el único con esta condición y el único que repite siempre.
+    {nombre:'JULIO',      unidad:null, excel:'ARRAEZ',
+     puestos:['traspaletista','p44bo1','p44bo2'],
+     exentoRepeticion:true, sinMontacargas:true, fijoObligatorio:true},
+  ].map(p=>({...p, activo:true}));
+}
+
+function defaultAlta(){
+  return [
+    {posicion:'09,10', personas:['REQUENA']},
+    {posicion:'11',    personas:['JEFFERSON']},
+    {posicion:'12,13', personas:['RAMON','YORDDY']},
+  ];
+}
+
+function defaultConfig(){
+  return {
+    personal: defaultPersonal(),
+    alta: defaultAlta(),
+    excluidas: [55,60,66,67],
+    extra: [44,64],
+    osPar: true,
+    osIndividual: true,
+    filaGris: true,
+    fijas: {'LUINGI':65},
+    version: VERSION_CONFIG,
+  };
+}
+
+/* ------------------------------------------------------------
+   MIGRACIÓN DE CONFIGURACIÓN GUARDADA
+   La app guarda tu configuración en el navegador y en Firebase.
+   Sin esto, una configuración guardada ANTES de agregar personal
+   nuevo (ej. Julio) seguiría cargándose sin él, y la rotación
+   dejaría puestos vacíos aunque Julio estuviera disponible.
+   Se ejecuta una sola vez por versión, así que si más adelante
+   borras a alguien a propósito, no vuelve a aparecer.
+   ------------------------------------------------------------ */
+function migrarConfig(cfg){
+  if(!cfg) return cfg;
+  const v = cfg.version || 0;
+  if(v >= VERSION_CONFIG) return cfg;
+
+  cfg.personal = cfg.personal || [];
+  const nuevos = [];
+  defaultPersonal().forEach(def=>{
+    if(!cfg.personal.some(p=>p.nombre === def.nombre)){
+      cfg.personal.push(def);
+      nuevos.push(def.nombre);
+    }
+  });
+  // Asegura que el traspaletista fijo conserve sus condiciones aunque su
+  // ficha se hubiera guardado antes sin ellas.
+  defaultPersonal().filter(d=>d.fijoObligatorio).forEach(def=>{
+    const p = cfg.personal.find(x=>x.nombre===def.nombre);
+    if(p){
+      p.puestos = def.puestos.slice();
+      p.exentoRepeticion = true;
+      p.sinMontacargas = true;
+      p.fijoObligatorio = true;
+      p.unidad = null;
+    }
+  });
+
+  cfg.version = VERSION_CONFIG;
+  if(nuevos.length) cfg.__migrados = nuevos;
+  return cfg;
+}
+
+let CONFIG = defaultConfig();
+let LIBRES = {};      // { 'NOMBRE': {LUNES:'', MARTES:'LIBRE', ...} }
+let FERIADOS = {};     // { 'LUNES': true/false, ... }
+let RESULTADO = null;  // { fechaLunes, etiqueta, dias:[...], porDia: {DIA:{slotId:{persona,unidad}}} }
+let HISTORIAL = [];    // lista de semanas guardadas [{fechaLunes, etiqueta, porDia}]
+
+/* ============================================================
+   PERSISTENCIA (localStorage + Firebase con fusión)
+   ============================================================ */
+const LS_CONFIG = 'rotacion_alma_config_v1';
+const LS_HIST = 'rotacion_alma_historial_v1';
+const LS_SEMANA = 'rotacion_alma_semana_v1';
+
+// Marca de tiempo de la última escritura propia de la semana en curso.
+// Sirve para que un dispositivo con una copia vieja no pise el trabajo
+// recién hecho en otro (el listener descarta payloads más antiguos).
+let SEMANA_TS = 0;
+
+function cargarLocal(){
+  try{ const c = JSON.parse(localStorage.getItem(LS_CONFIG)); if(c) CONFIG = migrarConfig(c); }catch(e){}
+  try{ const h = JSON.parse(localStorage.getItem(LS_HIST)); if(h) HISTORIAL = h; }catch(e){}
+  try{
+    const s = JSON.parse(localStorage.getItem(LS_SEMANA));
+    if(s){ SEMANA_TS = s.ts || 0; SEMANA_PENDIENTE = s; }
+  }catch(e){}
+}
+let SEMANA_PENDIENTE = null;
+
+function _mergeHistorialPorFecha(local, remoto){
+  var map = {};
+  (remoto||[]).forEach(function(r){ if(r && r.fechaLunes) map[r.fechaLunes]=r; });
+  (local ||[]).forEach(function(r){ if(r && r.fechaLunes) map[r.fechaLunes]=r; });
+  var out = []; for(var k in map) out.push(map[k]);
+  out.sort(function(a,b){ return (a.fechaLunes||'').localeCompare(b.fechaLunes||''); });
+  return out;
+}
+
+async function guardarConfig(msg){
+  localStorage.setItem(LS_CONFIG, JSON.stringify(CONFIG));
+  try{ if(typeof window.fbSave==='function') await window.fbSave('rotacion_alma_config','main',CONFIG); }catch(e){}
+  if(msg) toast('gen-msg', msg, 'ok');
+}
+
+/* ------------------------------------------------------------
+   SEMANA EN CURSO (días libres, feriados y la rotación generada
+   o editada a mano). Sin esto, pegabas el Excel en la PC y al
+   abrir en el celular no había nada; y una rotación editada se
+   perdía al recargar la página.
+   ------------------------------------------------------------ */
+function paqueteSemana(){
+  return {
+    ts: Date.now(),
+    fechaLunes: (document.getElementById('in-fecha-lunes')||{}).value || '',
+    etiqueta: (document.getElementById('in-etiqueta')||{}).value || '',
+    libres: LIBRES,
+    feriados: FERIADOS,
+    resultado: RESULTADO ? {
+      fechaLunes: RESULTADO.fechaLunes, etiqueta: RESULTADO.etiqueta,
+      diasActivos: RESULTADO.diasActivos, porDia: RESULTADO.porDia,
+      montacargasPorDia: RESULTADO.montacargasPorDia,
+      prevPorDia: RESULTADO.prevPorDia || null,
+      nivel: RESULTADO.nivel || null, editado: !!RESULTADO.editado
+    } : null
+  };
+}
+
+async function guardarSemanaTrabajo(){
+  const paq = paqueteSemana();
+  SEMANA_TS = paq.ts;
+  try{ localStorage.setItem(LS_SEMANA, JSON.stringify(paq)); }catch(e){}
+  try{ if(typeof window.fbSave==='function') await window.fbSave('rotacion_alma_semana','main',paq); }catch(e){}
+}
+
+function aplicarSemana(paq){
+  if(!paq) return;
+  LIBRES = paq.libres || {};
+  FERIADOS = paq.feriados || {};
+  if(paq.fechaLunes){ const el=document.getElementById('in-fecha-lunes'); if(el) el.value = paq.fechaLunes; }
+  if(paq.etiqueta){ const el=document.getElementById('in-etiqueta'); if(el) el.value = paq.etiqueta; }
+  document.querySelectorAll('.chk-feriado').forEach(chk=>{ chk.checked = !!FERIADOS[chk.dataset.day]; });
+  if(paq.resultado && paq.resultado.porDia){
+    RESULTADO = paq.resultado;
+    MODO_EDICION = false;
+  }
+  renderTablaLibres();
+  if(RESULTADO) renderResultado();
+}
+
+async function guardarHistorial(){
+  localStorage.setItem(LS_HIST, JSON.stringify(HISTORIAL));
+  try{
+    if(typeof window.fbSave==='function'){
+      if(typeof window.fbLoad==='function'){
+        var remoto = await window.fbLoad('rotacion_alma_historial','main');
+        HISTORIAL = _mergeHistorialPorFecha(HISTORIAL, remoto);
+      }
+      await window.fbSave('rotacion_alma_historial','main',HISTORIAL);
+    }
+  }catch(e){ console.warn('no se pudo fusionar historial', e); }
+  renderHistorial();
+}
+
+async function fbInit(){
+  let tries=0;
+  while(!window.__fbReady && tries<50){ await new Promise(r=>setTimeout(r,100)); tries++; }
+  try{
+    const remoteConfig = await window.fbLoad('rotacion_alma_config','main');
+    if(remoteConfig){
+      CONFIG = migrarConfig(remoteConfig);
+      // Si la copia en la nube venía sin el personal nuevo, se vuelve a subir
+      // migrada para que todos los dispositivos queden iguales.
+      if(CONFIG.__migrados){
+        avisarMigracion(CONFIG.__migrados);
+        delete CONFIG.__migrados;
+        guardarConfig();
+      }
+    }
+  }catch(e){}
+  try{
+    const remoteHist = await window.fbLoad('rotacion_alma_historial','main');
+    if(remoteHist) HISTORIAL = _mergeHistorialPorFecha(HISTORIAL, remoteHist);
+  }catch(e){}
+  // Semana en curso: gana la copia más reciente entre este dispositivo y la nube.
+  try{
+    const remoteSem = await window.fbLoad('rotacion_alma_semana','main');
+    if(remoteSem && (remoteSem.ts||0) >= SEMANA_TS){ SEMANA_PENDIENTE = remoteSem; SEMANA_TS = remoteSem.ts||0; }
+  }catch(e){}
+
+  renderAll();
+  if(SEMANA_PENDIENTE){ aplicarSemana(SEMANA_PENDIENTE); SEMANA_PENDIENTE = null; }
+  window.fbSetStatus(true);
+  try{
+    window.fbListen('rotacion_alma_config','main', function(remote){ CONFIG = migrarConfig(remote); renderAll(); });
+    window.fbListen('rotacion_alma_historial','main', function(remote){ HISTORIAL = _mergeHistorialPorFecha(HISTORIAL, remote); renderHistorial(); });
+    window.fbListen('rotacion_alma_semana','main', function(remote){
+      // Solo se acepta si es MÁS NUEVO que lo que tiene este dispositivo,
+      // para que una copia vieja no borre lo que acabas de hacer aquí.
+      if(!remote || (remote.ts||0) <= SEMANA_TS) return;
+      SEMANA_TS = remote.ts;
+      aplicarSemana(remote);
+    });
+  }catch(e){}
+}
+
+/* ============================================================
+   UI: TABS
+   ============================================================ */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    ['personal','config','semana','resultado','historial'].forEach(t=>{
+      document.getElementById('tab-'+t).style.display = (t===btn.dataset.tab)?'':'none';
+    });
+  });
+});
+
+function toast(elId, text, kind){
+  const el = document.getElementById(elId);
+  if(!el) return;
+  el.innerHTML = '<div class="msg '+(kind||'ok')+'">'+text+'</div>';
+  setTimeout(()=>{ if(el) el.innerHTML=''; }, 4000);
+}
+
+/* ============================================================
+   RENDER: PERSONAL
+   ============================================================ */
+function renderPersonal(){
+  const tb = document.querySelector('#tbl-personal tbody');
+  tb.innerHTML = '';
+  CONFIG.personal.forEach((p, idx)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" value="${p.nombre}" onchange="CONFIG.personal[${idx}].nombre=this.value.toUpperCase()"></td>
+      <td><input type="text" value="${p.excel||''}" placeholder="apellido" title="Cómo identificarlo en el Excel de días libres. Usa apellido + nombre si hay dos personas con el mismo apellido (ej: GONZALEZ JOSE)." onchange="CONFIG.personal[${idx}].excel=this.value.toUpperCase()"></td>
+      <td><input type="number" value="${p.unidad ?? ''}" placeholder="—" onchange="CONFIG.personal[${idx}].unidad=this.value?parseInt(this.value):null"></td>
+      <td><input type="checkbox" ${p.puestos?'checked':''} onchange="marcarTraspaletista(${idx}, this.checked)"></td>
+      <td><input type="checkbox" ${p.activo?'checked':''} onchange="CONFIG.personal[${idx}].activo=this.checked"></td>
+      <td><button class="btn danger small" onclick="eliminarPersona(${idx})">✕</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+// Traspaletista: solo casillas grises, sin montacargas, y exento de la regla
+// de no repetir (con 3 puestos posibles y 5 días tendría que repetir igual).
+const PUESTOS_TRASPALETA = ['traspaletista','p44bo1','p44bo2','almacenar'];
+function marcarTraspaletista(idx, on){
+  const p = CONFIG.personal[idx];
+  if(on){
+    p.puestos = PUESTOS_TRASPALETA.slice();
+    p.exentoRepeticion = true;
+    p.sinMontacargas = true;
+    p.unidad = null;
+  } else {
+    delete p.puestos; delete p.exentoRepeticion; delete p.sinMontacargas;
+  }
+  renderPersonal();
+}
+
+function agregarPersona(){
+  CONFIG.personal.push({nombre:'NUEVA PERSONA', unidad:null, activo:true});
+  renderPersonal();
+}
+function eliminarPersona(idx){
+  CONFIG.personal.splice(idx,1);
+  renderPersonal();
+}
+
+function renderAlta(){
+  const tb = document.querySelector('#tbl-alta tbody');
+  tb.innerHTML = '';
+  CONFIG.alta.forEach((a, idx)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" value="${a.posicion}" onchange="CONFIG.alta[${idx}].posicion=this.value"></td>
+      <td><input type="text" value="${a.personas.join(', ')}" onchange="CONFIG.alta[${idx}].personas=this.value.split(',').map(s=>s.trim().toUpperCase()).filter(Boolean)"></td>`;
+    tb.appendChild(tr);
+  });
+}
+
+function renderFijas(){
+  const tb = document.querySelector('#tbl-fijas tbody');
+  tb.innerHTML = '';
+  Object.keys(CONFIG.fijas).forEach((nombre)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" value="${nombre}" onchange="renombrarFija('${nombre}', this.value)"></td>
+      <td><input type="number" value="${CONFIG.fijas[nombre]}" onchange="CONFIG.fijas['${nombre}']=parseInt(this.value)"></td>
+      <td><button class="btn danger small" onclick="delete CONFIG.fijas['${nombre}']; renderFijas();">✕</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+function renombrarFija(oldName, newName){
+  newName = newName.toUpperCase();
+  if(newName===oldName) return;
+  CONFIG.fijas[newName] = CONFIG.fijas[oldName];
+  delete CONFIG.fijas[oldName];
+  renderFijas();
+}
+function agregarFija(){
+  CONFIG.fijas['NUEVA PERSONA'] = 0;
+  renderFijas();
+}
+
+function renderConfigInputs(){
+  document.getElementById('in-excluidas').value = CONFIG.excluidas.join(',');
+  document.getElementById('in-extra').value = CONFIG.extra.join(',');
+  document.getElementById('chk-os-par').checked = CONFIG.osPar;
+  document.getElementById('chk-os-individual').checked = CONFIG.osIndividual;
+  document.getElementById('chk-fila-gris').checked = CONFIG.filaGris;
+  ['in-excluidas','in-extra'].forEach(id=>{
+    document.getElementById(id).addEventListener('change', leerConfigInputs);
+  });
+  ['chk-os-par','chk-os-individual','chk-fila-gris'].forEach(id=>{
+    document.getElementById(id).addEventListener('change', leerConfigInputs);
+  });
+}
+function leerConfigInputs(){
+  CONFIG.excluidas = document.getElementById('in-excluidas').value.split(',').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n));
+  CONFIG.extra = document.getElementById('in-extra').value.split(',').map(s=>parseInt(s.trim())).filter(n=>!isNaN(n));
+  CONFIG.osPar = document.getElementById('chk-os-par').checked;
+  CONFIG.osIndividual = document.getElementById('chk-os-individual').checked;
+  CONFIG.filaGris = document.getElementById('chk-fila-gris').checked;
+}
+
+/* ============================================================
+   RENDER: TABLA DE DIAS LIBRES
+   ============================================================ */
+function renderTablaLibres(){
+  const tb = document.querySelector('#tbl-libres tbody');
+  tb.innerHTML = '';
+  CONFIG.personal.filter(p=>p.activo).forEach(p=>{
+    if(!LIBRES[p.nombre]) LIBRES[p.nombre] = {};
+    const tr = document.createElement('tr');
+    let tds = `<td style="text-align:left;font-weight:700;">${p.nombre}${p.unidad?'<span class="tag">#'+p.unidad+'</span>':''}</td>`;
+    DIAS.forEach(dia=>{
+      const val = LIBRES[p.nombre][dia] || '';
+      tds += `<td><select onchange="LIBRES['${p.nombre}']['${dia}']=this.value; guardarSemanaTrabajo();" class="${val?('status-'+(val==='VACACIONES'?'vac':'libre')):''}">
+        <option value="" ${val===''?'selected':''}>Asiste</option>
+        <option value="LIBRE" ${val==='LIBRE'?'selected':''}>Libre</option>
+        <option value="VACACIONES" ${val==='VACACIONES'?'selected':''}>Vacaciones</option>
+        <option value="REPOSO" ${val==='REPOSO'?'selected':''}>Reposo</option>
+      </select></td>`;
+    });
+    tr.innerHTML = tds;
+    tb.appendChild(tr);
+  });
+}
+
+document.querySelectorAll('.chk-feriado').forEach(chk=>{
+  chk.addEventListener('change', ()=>{ FERIADOS[chk.dataset.day] = chk.checked; guardarSemanaTrabajo(); });
+});
+['in-fecha-lunes','in-etiqueta'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(el) el.addEventListener('change', ()=>guardarSemanaTrabajo());
+});
+
+/* ============================================================
+   LECTOR DEL EXCEL DE DÍAS LIBRES (pegado directo)
+   Formato esperado (columnas de tu hoja "Dias Libres Alma."):
+     CODIGO | APELLIDO | NOMBRE | LUNES | MARTES | MIERCOLES | JUEVES | VIERNES
+   Tolera: filas de título ("DIAS LIBRES"), fila de NOTA al final,
+   celdas vacías, y pegado sin tabulaciones.
+   ============================================================ */
+let PEGADO = null; // {filas:[...], feriados:{}, sinMatch:[], noEncontrados:[]}
+
+function normalizar(txt){
+  return String(txt||'')
+    .toUpperCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')  // quita acentos
+    .replace(/[^A-Z0-9 ]/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+
+function normalizarEstado(txt){
+  const t = normalizar(txt);
+  if(!t) return '';
+  if(t.indexOf('VACAC')===0 || t.indexOf('VACAC')>-1) return 'VACACIONES';
+  if(t.indexOf('REPOS')>-1) return 'REPOSO';
+  if(t.indexOf('FERIAD')>-1) return 'FERIADO';
+  if(t.indexOf('LIBRE')>-1) return 'LIBRE';
+  if(t.indexOf('PERMIS')>-1) return 'LIBRE';
+  return '';
+}
+
+// Excel copia con TABULADORES y conserva las celdas vacías, así que las
+// columnas cuadran siempre. Si el texto viene sin tabuladores (copiado de
+// PDF/WhatsApp/retipeado), las celdas vacías se pierden al separar por
+// espacios y los días se correrían de columna. Por eso se marca `porTab`:
+// una fila sin tabuladores solo se acepta si su número de columnas calza
+// con el encabezado; si no, se reporta como ambigua en vez de adivinar.
+function partirFila(linea){
+  if(linea.indexOf('\t') > -1){
+    return {partes: linea.split('\t').map(s=>s.trim()), porTab:true};
+  }
+  return {partes: linea.split(/\s{2,}/).map(s=>s.trim()), porTab:false};
+}
+
+function parsearPegado(texto){
+  const lineas = texto.split(/\r?\n/).filter(l=>l.trim()!=='');
+  if(!lineas.length) return {error:'No se pegó nada.'};
+
+  // 1) Localizar la fila de encabezados (la que contiene LUNES y MARTES)
+  let idxHeader = -1, cols = null;
+  for(let i=0;i<lineas.length;i++){
+    const p = partirFila(lineas[i]).partes.map(normalizar);
+    if(p.indexOf('LUNES')>-1 && p.indexOf('MARTES')>-1){ idxHeader = i; cols = p; break; }
+  }
+  if(idxHeader === -1){
+    return {error:'No encontré la fila de encabezados. Asegúrate de copiar también la fila que dice CODIGO / APELLIDO / NOMBRE / LUNES / MARTES...'};
+  }
+
+  // 2) Mapear en qué columna cae cada día (tolera columnas extra o reordenadas)
+  const colDia = {};
+  DIAS.forEach(d=>{
+    const idx = cols.indexOf(d);
+    if(idx>-1) colDia[d] = idx;
+  });
+  if(Object.keys(colDia).length === 0){
+    return {error:'La fila de encabezados no tiene columnas de días reconocibles.'};
+  }
+  const idxApellido = cols.indexOf('APELLIDO');
+  const idxNombre   = cols.indexOf('NOMBRE');
+
+  // 3) Leer las filas de personas
+  const activos = CONFIG.personal.filter(p=>p.activo);
+  const usados = {};
+  const filas = [], sinMatch = [], ambiguas = [];
+  const conteoFeriado = {}; DIAS.forEach(d=>conteoFeriado[d]=0);
+  let filasValidas = 0;
+
+  for(let i=idxHeader+1;i<lineas.length;i++){
+    const fila = partirFila(lineas[i]);
+    const p = fila.partes;
+    const crudo = normalizar(p.join(' '));
+    if(!crudo) continue;
+    if(crudo.indexOf('NOTA')===0) continue;          // fila de nota al pie
+    if(crudo.indexOf('DIAS LIBRES')>-1) continue;    // título repetido
+
+    const apellido = idxApellido>-1 ? (p[idxApellido]||'') : (p[1]||'');
+    const nombre   = idxNombre  >-1 ? (p[idxNombre]  ||'') : (p[2]||'');
+    const etiqueta = normalizar(apellido+' '+nombre);
+    if(!etiqueta) continue;
+
+    // Sin tabuladores las celdas vacías se pierden: si el número de columnas
+    // no calza con el encabezado, los días quedarían corridos. Mejor avisar
+    // que asignar un día equivocado.
+    if(!fila.porTab && p.length !== cols.length){
+      ambiguas.push(etiqueta);
+      continue;
+    }
+
+    // estados por día
+    const estados = {};
+    let tieneAlgo = false;
+    DIAS.forEach(d=>{
+      if(colDia[d]===undefined) return;
+      const e = normalizarEstado(p[colDia[d]]);
+      estados[d] = e;
+      if(e) tieneAlgo = true;
+      if(e === 'FERIADO') conteoFeriado[d]++;
+    });
+    filasValidas++;
+
+    // 4) Emparejar con el personal: TODOS los tokens del identificador
+    //    deben aparecer en "APELLIDO NOMBRE" (así GONZALEZ JOSE no se
+    //    confunde con GONZALEZ RAMON, ni PERDOMO con SANCHEZ JEFFERSON).
+    let match = null;
+    for(const persona of activos){
+      const clave = normalizar(persona.excel || persona.nombre);
+      if(!clave) continue;
+      const tokens = clave.split(' ');
+      if(tokens.every(t=> etiqueta.split(' ').indexOf(t) > -1 )){
+        match = persona.nombre; break;
+      }
+    }
+
+    if(match && !usados[match]){
+      usados[match] = true;
+      filas.push({etiqueta, persona:match, estados});
+    } else if(match){
+      filas.push({etiqueta, persona:match, estados, duplicado:true});
+    } else {
+      sinMatch.push({etiqueta, estados, tieneAlgo});
+    }
+  }
+
+  // 5) Feriado: si un día viene FERIADO para casi todos, es feriado general
+  const feriados = {};
+  DIAS.forEach(d=>{
+    if(filasValidas>0 && conteoFeriado[d] >= Math.max(2, Math.floor(filasValidas*0.7))) feriados[d]=true;
+  });
+
+  // 6) Personal activo que no apareció en el pegado
+  const noEncontrados = activos.filter(p=>!usados[p.nombre]).map(p=>p.nombre);
+
+  return {filas, sinMatch, noEncontrados, feriados, colDia, ambiguas};
+}
+
+function analizarPegado(){
+  const texto = document.getElementById('ta-pegado').value;
+  const cont = document.getElementById('preview-pegado');
+  const r = parsearPegado(texto);
+
+  if(r.error){ cont.innerHTML = '<div class="msg err">'+r.error+'</div>'; PEGADO=null; return; }
+  PEGADO = r;
+
+  const diasLeidos = Object.keys(r.colDia);
+  let html = '<div class="msg ok"><b>'+r.filas.length+' personas identificadas</b> · días leídos: '+diasLeidos.join(', ')+'</div>';
+
+  html += '<div class="tablewrap" style="margin-top:10px;"><table><thead><tr><th>En tu Excel</th><th>Se aplicará a</th>'
+        + diasLeidos.map(d=>'<th>'+d.substring(0,3)+'</th>').join('') + '</tr></thead><tbody>';
+  r.filas.forEach(f=>{
+    html += '<tr><td style="text-align:left;">'+f.etiqueta+'</td><td><b>'+f.persona+'</b>'
+          + (f.duplicado?' <span class="pill warn">duplicado</span>':'')+'</td>';
+    diasLeidos.forEach(d=>{
+      const e = f.estados[d]||'';
+      html += '<td>'+(e ? '<span class="pill warn">'+e.substring(0,4)+'</span>' : '<span class="pill ok">·</span>')+'</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+
+  if(Object.keys(r.feriados).length){
+    html += '<div class="msg ok" style="margin-top:8px;">🎌 Detecté FERIADO general en: <b>'+Object.keys(r.feriados).join(', ')+'</b>. Se marcarán esos días como feriado.</div>';
+  }
+  if(r.noEncontrados.length){
+    html += '<div class="msg err" style="margin-top:8px;"><b>Personal activo que NO apareció en el pegado:</b> '+r.noEncontrados.join(', ')
+          + '<br><small>Se asumirá que asisten todos los días. Si alguno debería estar, revisa su columna "Nombre en Excel" en la pestaña 👥 Personal.</small></div>';
+  }
+  if(r.ambiguas && r.ambiguas.length){
+    html += '<div class="msg err" style="margin-top:8px;"><b>⚠️ '+r.ambiguas.length+' fila(s) no se pudieron leer con seguridad:</b> '+r.ambiguas.join(' · ')
+          + '<br><small>El texto vino sin tabuladores, así que no se distingue en qué día cae cada marca y podría asignarse un día equivocado. Copia el cuadro <b>directamente desde Excel</b> (seleccionar celdas → Ctrl+C) en lugar de un PDF o WhatsApp.</small></div>';
+  }
+  if(r.sinMatch.length){
+    const relevantes = r.sinMatch.filter(s=>s.tieneAlgo);
+    html += '<div class="msg err" style="margin-top:8px;"><b>Filas del Excel que no pude asociar</b> (se ignoran): '
+          + r.sinMatch.map(s=>s.etiqueta).join(' · ')
+          + (relevantes.length? '<br><small>⚠️ Ojo: '+relevantes.length+' de ellas SÍ tenían libre/vacaciones marcado. Si son de tu personal rotativo, corrige su "Nombre en Excel" en la pestaña 👥 Personal.</small>':'')
+          + '</div>';
+  }
+
+  html += '<div class="row" style="margin-top:10px;"><button class="btn" onclick="aplicarPegado()">✔ Aplicar a la tabla de días libres</button></div>';
+  cont.innerHTML = html;
+}
+
+function aplicarPegado(){
+  if(!PEGADO){ toast('gen-msg','Primero pega el cuadro y presiona Analizar.','err'); return; }
+
+  // Limpia lo anterior y aplica lo leído
+  LIBRES = {};
+  CONFIG.personal.filter(p=>p.activo).forEach(p=>{ LIBRES[p.nombre] = {}; });
+
+  PEGADO.filas.forEach(f=>{
+    if(!LIBRES[f.persona]) LIBRES[f.persona] = {};
+    DIAS.forEach(d=>{
+      const e = f.estados[d];
+      // FERIADO general se maneja aparte (día completo), no como ausencia individual
+      if(e && !(e==='FERIADO' && PEGADO.feriados[d])) LIBRES[f.persona][d] = (e==='FERIADO'?'LIBRE':e);
+    });
+  });
+
+  // Feriados generales
+  DIAS.forEach(d=>{ FERIADOS[d] = !!PEGADO.feriados[d]; });
+  document.querySelectorAll('.chk-feriado').forEach(chk=>{
+    chk.checked = !!FERIADOS[chk.dataset.day];
+  });
+
+  renderTablaLibres();
+
+  // Aviso de la regla operativa: máx 2 libres por día
+  const excedidos = [];
+  DIAS.forEach(d=>{
+    if(FERIADOS[d]) return;
+    let n=0;
+    Object.keys(LIBRES).forEach(p=>{ if(LIBRES[p][d]==='LIBRE') n++; });
+    if(n>2) excedidos.push(d+' ('+n+')');
+  });
+
+  guardarSemanaTrabajo();   // punto de entrada de datos: siempre persistir
+
+  let msg = '✔ Días libres aplicados desde tu Excel.';
+  if(excedidos.length) msg += ' ⚠️ Ojo: más de 2 personas libres el mismo día en '+excedidos.join(', ')+'.';
+  toast('gen-msg', msg, excedidos.length?'err':'ok');
+  document.getElementById('preview-pegado').innerHTML =
+    '<div class="msg ok">✔ Aplicado. Revisa la tabla de abajo y presiona <b>Generar rotación</b>.</div>';
+}
+
+/* ============================================================
+   SOLVER DE ROTACIÓN (por área, sin repetir vs semana pasada
+   ni dentro de la semana)
+   ============================================================ */
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+
+// porDia[dia] guarda slotId -> NOMBRE (string). Antes se comparaba contra
+// asign.persona (propiedad que no existe), así que la regla "no repetir el
+// pasillo de la semana pasada" nunca se aplicaba de verdad.
+function obtenerAreaAnterior(prevPorDia, persona, dia){
+  if(!prevPorDia || !prevPorDia[dia]) return null;
+  for(const slot of SLOTS){
+    if(prevPorDia[dia][slot.id] === persona) return slot.area;
+  }
+  return null;
+}
+
+/* ------------------------------------------------------------
+   Emparejamiento bipartito (algoritmo de Kuhn / caminos
+   aumentantes). Sustituye al backtracking aleatorio anterior,
+   que era exponencial: con 13 puestos y dominios cada vez más
+   estrechos hacia el jueves/viernes, podía tardar minutos u
+   horas y congelaba la página ("Esta página no responde").
+   Este encuentra un emparejamiento perfecto — o demuestra que
+   no existe — en tiempo polinómico (milisegundos).
+   ------------------------------------------------------------ */
+function emparejar(personas, dominios){
+  const slotDe = {};      // persona -> slotId
+  const personaDe = {};   // slotId  -> persona
+
+  function aumentar(persona, visitados){
+    for(const slotId of dominios[persona]){
+      if(visitados.has(slotId)) continue;
+      visitados.add(slotId);
+      const ocupante = personaDe[slotId];
+      if(ocupante === undefined || aumentar(ocupante, visitados)){
+        personaDe[slotId] = persona;
+        slotDe[persona] = slotId;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  for(const persona of personas){
+    if(!aumentar(persona, new Set())) return null; // no hay emparejamiento perfecto
+  }
+  return personaDe;
+}
+
+/* ------------------------------------------------------------
+   NIVELES DE ROTACIÓN
+
+   La regla estricta "nadie repite pasillo en la semana" está al
+   límite matemático: O/S y Pasillo 44 tienen 3 cupos/día, o sea
+   15 asignaciones en una semana de 5 días. Con 15 personas eso
+   obliga a que las 15 pasen por O/S exactamente una vez Y por
+   Pasillo 44 exactamente una vez — margen cero. En cuanto alguien
+   libra, la cuadratura se rompe y NO existe solución.
+
+   Por eso se intenta en cascada y se informa qué nivel se usó:
+     1 = estricto: no repite pasillo en la semana + distinto a la
+         semana pasada.
+     2 = no repite TAREA en la semana (en O/S y P44 puede volver
+         al pasillo pero en otra tarea) + distinto a la semana
+         pasada. Operativamente sigue siendo rotación real.
+     3 = como el 2, pero sin comparar contra la semana pasada.
+   ------------------------------------------------------------ */
+const NIVELES = [
+  {n:1, clave:'area', usarPrev:true,
+   texto:'Estricto — nadie repite pasillo en la semana y nadie coincide con su pasillo de la semana pasada.'},
+  {n:2, clave:'rol',  usarPrev:true,
+   texto:'Nadie repite la misma tarea en la semana y nadie coincide con la semana pasada. En O/S y Pasillo 44 alguien puede volver al pasillo, pero en una tarea distinta (el combo y la línea gris son trabajos diferentes).'},
+  {n:3, clave:'rol',  usarPrev:false,
+   texto:'Nadie repite la misma tarea en la semana, pero no se pudo evitar coincidir con algunos puestos de la semana pasada.'},
+];
+
+function claveDe(slot, clave){ return clave==='area' ? slot.area : slot.rol; }
+
+function obtenerClaveAnterior(prevPorDia, persona, dia, clave){
+  if(!prevPorDia || !prevPorDia[dia]) return null;
+  for(const slot of SLOTS){
+    if(prevPorDia[dia][slot.id] === persona) return claveDe(slot, clave);
+  }
+  return null;
+}
+
+function fichaDe(persona){
+  return (CONFIG.personal || []).find(p=>p.nombre===persona) || {};
+}
+
+function dominioDe(persona, dia, usadas, prevPorDia, cfg){
+  const ficha = fichaDe(persona);
+
+  // Personal con puestos restringidos (ej. traspaletista): solo esos puestos.
+  let candidatos = SLOTS;
+  if(ficha.puestos && ficha.puestos.length){
+    candidatos = SLOTS.filter(s=>ficha.puestos.indexOf(s.id) > -1);
+  }
+
+  // Exento de la regla de no repetir (rol fijo con pocos puestos posibles).
+  if(ficha.exentoRepeticion) return shuffle(candidatos.map(s=>s.id));
+
+  const prohibidas = new Set(usadas[persona] || []);
+  if(cfg.usarPrev){
+    const ant = obtenerClaveAnterior(prevPorDia, persona, dia, cfg.clave);
+    if(ant) prohibidas.add(ant);
+  }
+  return shuffle(candidatos.filter(s=>!prohibidas.has(claveDe(s, cfg.clave))).map(s=>s.id));
+}
+
+/* Control de tiempo: hay configuraciones de días libres donde demostrar que
+   NO existe solución exige explorar un espacio enorme. Para que la página
+   nunca se congele, toda la búsqueda respeta un plazo en milisegundos y, si
+   se agota, devuelve lo mejor que haya encontrado. */
+function vencido(deadline){ return deadline && Date.now() > deadline; }
+
+function solveDia(personasDisponibles, dia, usadas, prevPorDia, cfg, deadline){
+  const N = SLOTS.length; // 13 puestos
+  const dominios = {};
+  personasDisponibles.forEach(p=>{ dominios[p] = dominioDe(p, dia, usadas, prevPorDia, cfg); });
+
+  if(personasDisponibles.length <= N){
+    const asign = emparejar(shuffle(personasDisponibles), dominios);
+    return asign ? {asign} : null;
+  }
+
+  // Sobran personas: descansan las que sobran. El personal de ROL FIJO
+  // (traspaletista) no es intercambiable, así que siempre entra a trabajar;
+  // los que descansan salen del grupo rotativo. En vez de probar TODAS las
+  // combinaciones (explosión combinatoria), se prueban varias al azar.
+  const fijos     = personasDisponibles.filter(p=>fichaDe(p).puestos);
+  const rotativos = personasDisponibles.filter(p=>!fichaDe(p).puestos);
+
+  for(let intento=0; intento<12; intento++){
+    if(vencido(deadline)) return null;
+    const trabajando = fijos.concat(shuffle(rotativos)).slice(0, N);
+    const doms = {};
+    trabajando.forEach(p=>{ doms[p] = dominios[p]; });
+    const asign = emparejar(trabajando, doms);
+    if(asign) return {asign};
+  }
+  return null;
+}
+
+// Backtracking a nivel semana: si un día no tiene salida, se reintenta el día
+// anterior con otro reparto en vez de descartar la semana completa.
+/* Si un día quedan menos personas que puestos, el emparejamiento deja algún
+   puesto vacío. Pero el traspaletista fijo NUNCA debe quedar fuera: si está
+   disponible y alguna de sus casillas grises está libre, se le asigna. */
+function colocarFijosObligatorios(asign, disponibles){
+  (CONFIG.personal || []).forEach(p=>{
+    if(!p.fijoObligatorio || !p.activo) return;
+    if(disponibles.indexOf(p.nombre) === -1) return;              // libra ese día
+    if(Object.values(asign).indexOf(p.nombre) > -1) return;        // ya está puesto
+    const libre = (p.puestos || []).find(sl => !asign[sl]);
+    if(libre) asign[libre] = p.nombre;
+  });
+  return asign;
+}
+
+function generarSemanaNivel(diasActivos, personasPool, libres, prevPorDia, cfg, deadline){
+  const usadas = {};
+  personasPool.forEach(p=>usadas[p]=[]);
+  const porDia = {};
+
+  function resolver(i){
+    if(i === diasActivos.length) return true;
+    if(vencido(deadline)) return false;
+    const dia = diasActivos[i];
+    const disponibles = personasPool.filter(p => !(libres[p] && libres[p][dia]));
+
+    for(let alt=0; alt<6; alt++){
+      if(vencido(deadline)) return false;
+      const res = solveDia(disponibles, dia, usadas, prevPorDia, cfg, deadline);
+      if(!res) break; // este día no tiene salida con el estado actual
+
+      colocarFijosObligatorios(res.asign, disponibles);
+      porDia[dia] = res.asign;
+      const agregadas = [];
+      for(const slot of SLOTS){
+        const persona = res.asign[slot.id];
+        if(persona){ const k = claveDe(slot, cfg.clave); usadas[persona].push(k); agregadas.push([persona,k]); }
+      }
+      if(resolver(i+1)) return true;
+      // deshacer y probar otro reparto para este mismo día
+      agregadas.forEach(([persona,k])=>{
+        const idx = usadas[persona].lastIndexOf(k);
+        if(idx>-1) usadas[persona].splice(idx,1);
+      });
+      delete porDia[dia];
+    }
+    return false;
+  }
+
+  return resolver(0) ? porDia : null;
+}
+
+function generarSemana(diasActivos, personasPool, libres, prevPorDia, cfg, deadline){
+  cfg = cfg || NIVELES[0];
+  for(let intento=0; intento<6; intento++){
+    if(vencido(deadline)) return null;
+    const r = generarSemanaNivel(diasActivos, personasPool, libres, prevPorDia, cfg, deadline);
+    if(r) return r;
+  }
+  return null;
+}
+
+// La flota de montacargas es justa (a veces exactamente 10 unidades para 12 cupos/día).
+// No toda rotación válida por área deja suficientes montacargas libres, así que se
+// generan varias rotaciones candidatas y se elige la primera que además cubra a
+// todos con montacargas; si ninguna es perfecta, se entrega la que menos gente
+// deje sin unidad.
+function generarSemanaConMontacargas(diasActivos, personasPool, libres, prevPorDia, msMax){
+  // Presupuesto total de tiempo, repartido entre los 3 niveles. Así la
+  // respuesta llega siempre en ~1,5 s como máximo, incluso en configuraciones
+  // donde demostrar que no hay solución sería carísimo.
+  msMax = msMax || 1500;
+  const porNivel = Math.floor(msMax / NIVELES.length);
+
+  for(const cfg of NIVELES){
+    const deadline = Date.now() + porNivel;
+    let mejor = null, mejorSinUnidad = Infinity;
+    while(!vencido(deadline)){
+      const porDia = generarSemana(diasActivos, personasPool, libres, prevPorDia, cfg, deadline);
+      if(!porDia) break; // este nivel no da más; pasar al siguiente
+      const montacargasPorDia = {};
+      let totalSinUnidad = 0;
+      diasActivos.forEach(dia=>{
+        const r = asignarMontacargas(dia, porDia[dia], libres);
+        montacargasPorDia[dia] = r;
+        totalSinUnidad += r.sinUnidad.length;
+      });
+      if(totalSinUnidad === 0) return {porDia, montacargasPorDia, sinUnidadTotal:0, nivel:cfg};
+      if(totalSinUnidad < mejorSinUnidad){
+        mejor = {porDia, montacargasPorDia, sinUnidadTotal:totalSinUnidad, nivel:cfg};
+        mejorSinUnidad = totalSinUnidad;
+      }
+    }
+    if(mejor) return mejor;
+  }
+  return null;
+}
+
+/* ============================================================
+   AUDITORÍA DE LA ROTACIÓN
+   Revisa el resultado (generado o editado a mano) y devuelve
+   TODOS los problemas, con el slot exacto para pintarlo en rojo.
+   ============================================================ */
+function auditar(){
+  if(!RESULTADO) return {porSlot:{}, lista:[]};
+  const porSlot = {};   // 'DIA|slotId' -> [motivos]
+  const lista = [];
+  const marcar = (dia, slotId, motivo)=>{
+    const k = dia+'|'+slotId;
+    (porSlot[k] = porSlot[k] || []).push(motivo);
+  };
+
+  const dias = RESULTADO.diasActivos;
+
+  // 1) Repetición de pasillo en la semana (la regla que pediste)
+  const vistos = {}; // persona -> {area: [dia|slot]}
+  dias.forEach(dia=>{
+    SLOTS.forEach(s=>{
+      const p = RESULTADO.porDia[dia][s.id];
+      if(!p) return;
+      if(fichaDe(p).exentoRepeticion) return; // rol fijo, exento
+      vistos[p] = vistos[p] || {};
+      (vistos[p][s.area] = vistos[p][s.area] || []).push({dia, slot:s.id});
+    });
+  });
+  Object.keys(vistos).forEach(p=>{
+    Object.keys(vistos[p]).forEach(area=>{
+      const ocur = vistos[p][area];
+      if(ocur.length > 1){
+        const dd = ocur.map(o=>o.dia).join(' y ');
+        lista.push({tipo:'repite', texto:'<b>'+p+'</b> repite el pasillo <b>'+area+'</b> ('+dd+')'});
+        ocur.forEach(o=>marcar(o.dia, o.slot, 'Repite pasillo '+area));
+      }
+    });
+  });
+
+  // 2) Coincidencia con la semana pasada (mismo pasillo, mismo día)
+  if(RESULTADO.prevPorDia){
+    dias.forEach(dia=>{
+      SLOTS.forEach(s=>{
+        const p = RESULTADO.porDia[dia][s.id];
+        if(!p || fichaDe(p).exentoRepeticion) return;
+        const ant = obtenerClaveAnterior(RESULTADO.prevPorDia, p, dia, 'area');
+        if(ant && ant === s.area){
+          lista.push({tipo:'prev', texto:'<b>'+p+'</b> está en <b>'+s.area+'</b> el '+dia+', igual que la semana pasada'});
+          marcar(dia, s.id, 'Igual que la semana pasada');
+        }
+      });
+    });
+  }
+
+  // 3) Alguien programado en un día que tiene libre / vacaciones / reposo
+  dias.forEach(dia=>{
+    SLOTS.forEach(s=>{
+      const p = RESULTADO.porDia[dia][s.id];
+      if(!p) return;
+      const est = LIBRES[p] && LIBRES[p][dia];
+      if(est){
+        lista.push({tipo:'libre', texto:'<b>'+p+'</b> está en '+est+' el '+dia+' y aparece asignado'});
+        marcar(dia, s.id, est+' ese día');
+      }
+    });
+  });
+
+  // 4) Persona en dos puestos el mismo día
+  dias.forEach(dia=>{
+    const donde = {};
+    SLOTS.forEach(s=>{
+      const p = RESULTADO.porDia[dia][s.id];
+      if(!p) return;
+      (donde[p] = donde[p] || []).push(s.id);
+    });
+    Object.keys(donde).forEach(p=>{
+      if(donde[p].length > 1){
+        lista.push({tipo:'doble', texto:'<b>'+p+'</b> aparece en '+donde[p].length+' puestos el '+dia});
+        donde[p].forEach(sl=>marcar(dia, sl, 'Está en 2 puestos ese día'));
+      }
+    });
+  });
+
+  // 5) Montacargas repetido el mismo día (salvo el combo de O/S que comparte)
+  dias.forEach(dia=>{
+    const mc = RESULTADO.montacargasPorDia[dia];
+    if(!mc) return;
+    const conteo = {};
+    Object.keys(mc.asignadas).forEach(sl=>{
+      const u = mc.asignadas[sl];
+      if(u==null) return;
+      (conteo[u] = conteo[u] || []).push(sl);
+    });
+    Object.keys(conteo).forEach(u=>{
+      const sls = conteo[u];
+      if(sls.length < 2) return;
+      const esParOS = sls.length===2 && sls.indexOf('os0')>-1 && sls.indexOf('os1')>-1;
+      if(esParOS) return; // el combo de O/S comparte a propósito
+      lista.push({tipo:'monta', texto:'El montacargas <b>'+u+'</b> está asignado a '+sls.length+' personas el '+dia});
+      sls.forEach(sl=>marcar(dia, sl, 'Montacargas '+u+' duplicado'));
+    });
+  });
+
+  // 6) Puestos vacíos (no alcanza el personal disponible ese día)
+  dias.forEach(dia=>{
+    const vacios = [];
+    SLOTS.forEach(s=>{
+      if(!RESULTADO.porDia[dia][s.id]){
+        marcar(dia, s.id, 'Puesto sin asignar');
+        vacios.push(s.label);
+      }
+    });
+    if(vacios.length){
+      const activos = (CONFIG.personal||[]).filter(p=>p.activo).length;
+      const libresHoy = (CONFIG.personal||[]).filter(p=>p.activo && LIBRES[p.nombre] && LIBRES[p.nombre][dia]).length;
+      lista.push({tipo:'vacio', texto:'El <b>'+dia+'</b> quedan '+vacios.length+' puesto(s) sin cubrir ('
+        + vacios.join(', ')+'): hay '+(activos-libresHoy)+' personas disponibles para '+SLOTS.length+' puestos'});
+    }
+  });
+
+  return {porSlot, lista};
+}
+
+// Explica por qué no hay solución, en lugar de un mensaje genérico.
+function diagnosticar(diasActivos, personasPool, libres){
+  const problemas = [];
+  const cupos = {};
+  SLOTS.forEach(s=>{ cupos[s.area] = (cupos[s.area]||0)+1; });
+
+  // ¿Algún día se queda con menos gente que puestos?
+  diasActivos.forEach(dia=>{
+    const disp = personasPool.filter(p=>!(libres[p] && libres[p][dia]));
+    if(disp.length < SLOTS.length){
+      problemas.push('El <b>'+dia+'</b> solo hay '+disp.length+' personas disponibles para '+SLOTS.length+' puestos: quedarán '+(SLOTS.length-disp.length)+' puesto(s) vacío(s).');
+    }
+  });
+
+  // ¿Alguna área necesita más personas distintas que las que hay?
+  const D = diasActivos.length;
+  Object.keys(cupos).forEach(a=>{
+    const necesita = cupos[a]*D;
+    if(necesita > personasPool.length){
+      problemas.push('El área <b>'+a+'</b> tiene '+cupos[a]+' cupos/día × '+D+' días = '+necesita+
+        ' asignaciones, y como nadie puede repetirla en la semana harían falta '+necesita+
+        ' personas distintas, pero solo hay '+personasPool.length+'.');
+    }
+  });
+  return problemas;
+}
+
+/* ============================================================
+   ASIGNACIÓN DE MONTACARGAS
+   ============================================================ */
+function unidadPropia(persona){
+  if(CONFIG.fijas[persona] != null) return CONFIG.fijas[persona];
+  const p = CONFIG.personal.find(x=>x.nombre===persona);
+  if(p && p.unidad && !CONFIG.excluidas.includes(p.unidad)) return p.unidad;
+  return null;
+}
+
+function asignarMontacargas(dia, asignSlots, libres){
+  const p0 = asignSlots['os0'], p1 = asignSlots['os1'], p2 = asignSlots['os2'];
+  let free = CONFIG.extra.slice();
+
+  // Libera unidades de dueños que están libres/vacaciones/reposo ese día
+  CONFIG.personal.forEach(p=>{
+    if(p.unidad && !CONFIG.excluidas.includes(p.unidad) && libres[p.nombre] && libres[p.nombre][dia]){
+      free.push(p.unidad);
+    }
+  });
+
+  const asignadas = {}; // slotId -> unidad|null
+  // Puestos que NO requieren montacargas por diseño del proceso. Se distingue
+  // de "falta unidad": aquí la persona trabaja sin equipo porque su tarea no
+  // lo necesita, no porque la flota no alcance.
+  const noRequiere = {};
+
+  // 1) Puestos que nunca llevan montacargas (traspaleta manual), sea quien sea
+  //    la persona que los ocupe. Si esa persona tiene unidad propia, queda
+  //    libre para prestarla a otro puesto.
+  SLOTS_SIN_MONTACARGAS.forEach(slotId=>{
+    const persona = asignSlots[slotId];
+    // Una unidad FIJA por persona (ej. Luingi = 65) se respeta igual, para no
+    // contradecir esa regla; en cualquier otro caso el puesto va sin equipo.
+    if(persona && CONFIG.fijas[persona] != null){
+      asignadas[slotId] = CONFIG.fijas[persona];
+      return;
+    }
+    asignadas[slotId] = null;
+    noRequiere[slotId] = true;
+    const u = unidadPropia(persona);
+    if(u!=null) free.push(u);
+  });
+
+  // 2) Personal que por su rol no usa montacargas (ej. traspaletista fijo).
+  SLOTS.forEach(s=>{
+    const persona = asignSlots[s.id];
+    if(persona && fichaDe(persona).sinMontacargas){
+      asignadas[s.id] = null;
+      noRequiere[s.id] = true;
+    }
+  });
+
+  // Fila gris de pasillo 44: sin unidad, libera la propia si tenía —
+  // EXCEPTO si la persona tiene una unidad FIJA asignada (ej. Luingi=65),
+  // esa regla "siempre" tiene prioridad sobre la fila gris.
+  if(CONFIG.filaGris){
+    ['p44bo1','p44bo2'].forEach(slotId=>{
+      if(noRequiere[slotId]) return; // ya resuelto: rol sin montacargas
+      const persona = asignSlots[slotId];
+      if(CONFIG.fijas[persona] != null){
+        asignadas[slotId] = CONFIG.fijas[persona];
+      } else {
+        asignadas[slotId] = null;
+        noRequiere[slotId] = true;
+        const u = unidadPropia(persona);
+        if(u!=null) free.push(u);
+      }
+    });
+  }
+
+  const solicitudes = []; // slots que deben pedir prestado, en orden de prioridad
+
+  // O/S individual (línea gris de O/S)
+  if(!CONFIG.osIndividual){
+    asignadas['os2'] = null;
+    noRequiere['os2'] = true;
+  } else if(!noRequiere['os2']){
+    const u2 = unidadPropia(p2);
+    if(u2!=null) asignadas['os2'] = u2;
+    else solicitudes.push(['os2']);
+  }
+
+  // O/S combo comparte 1 unidad. Si alguno de los dos tiene unidad FIJA asignada
+  // (ej. Luingi siempre 65), esa tiene prioridad sin importar el orden del combo.
+  if(CONFIG.osPar){
+    const fija0 = CONFIG.fijas[p0], fija1 = CONFIG.fijas[p1];
+    const u0 = unidadPropia(p0), u1 = unidadPropia(p1);
+    let compartida = null;
+    if(fija0 != null){ compartida = fija0; if(u1!=null) free.push(u1); }
+    else if(fija1 != null){ compartida = fija1; if(u0!=null) free.push(u0); }
+    else if(u0!=null){ compartida = u0; if(u1!=null) free.push(u1); }
+    else if(u1!=null){ compartida = u1; }
+    if(compartida!=null){ asignadas['os0']=compartida; asignadas['os1']=compartida; }
+    else solicitudes.push(['os0','os1']);
+  } else {
+    ['os0','os1'].forEach(slotId=>{
+      const persona = asignSlots[slotId];
+      const u = unidadPropia(persona);
+      if(u!=null) asignadas[slotId]=u; else solicitudes.push([slotId]);
+    });
+  }
+
+  // Resto de puestos individuales
+  const otrosPendientes = [];
+  SLOTS.forEach(s=>{
+    if(['os0','os1','os2','p44bo1','p44bo2'].includes(s.id)) return;
+    if(noRequiere[s.id]) return; // rol que no usa montacargas (traspaletista)
+    const persona = asignSlots[s.id];
+    const u = unidadPropia(persona);
+    if(u!=null) asignadas[s.id] = u;
+    else otrosPendientes.push(s.id);
+  });
+
+  free = [...new Set(free)].sort((a,b)=>a-b);
+  let fi = 0;
+  const sinUnidad = [];
+
+  solicitudes.forEach(slots=>{
+    const u = fi < free.length ? free[fi++] : null;
+    slots.forEach(slotId=>{
+      asignadas[slotId] = u;
+      if(u==null) sinUnidad.push(asignSlots[slotId]);
+    });
+  });
+  otrosPendientes.forEach(slotId=>{
+    const u = fi < free.length ? free[fi++] : null;
+    asignadas[slotId] = u;
+    if(u==null) sinUnidad.push(asignSlots[slotId]);
+  });
+
+  return {asignadas, noRequiere, sinUnidad, sobrantes: free.slice(fi)};
+}
+
+/* ============================================================
+   GENERAR ROTACIÓN COMPLETA
+   ============================================================ */
+async function generarRotacion(){
+  const fechaLunes = document.getElementById('in-fecha-lunes').value;
+  if(!fechaLunes){ toast('gen-msg','Selecciona la fecha del lunes de la semana.','err'); return; }
+  const etiqueta = document.getElementById('in-etiqueta').value || ('Semana del '+fechaLunes);
+
+  const diasActivos = DIAS.filter(d=>!FERIADOS[d]);
+  const personasPool = CONFIG.personal.filter(p=>p.activo).map(p=>p.nombre);
+
+  // busca la semana guardada más reciente ANTERIOR a esta fecha para no repetir pasillo
+  const anteriores = HISTORIAL.filter(h=>h.fechaLunes && h.fechaLunes < fechaLunes)
+                              .sort((a,b)=>b.fechaLunes.localeCompare(a.fechaLunes));
+  const prevPorDia = anteriores.length ? anteriores[0].porDia : null;
+
+  if(personasPool.length < SLOTS.length){
+    toast('gen-msg','Solo hay '+personasPool.length+' personas activas y se necesitan '+SLOTS.length+' para cubrir todos los puestos. Agrega personal en la pestaña 👥 Personal.','err');
+    return;
+  }
+
+  // Muestra un aviso y cede el hilo al navegador antes de calcular, para que
+  // la pantalla se repinte y nunca aparezca "Esta página no responde".
+  document.getElementById('gen-msg').innerHTML = '<div class="msg ok">⏳ Calculando rotación...</div>';
+  await new Promise(r=>setTimeout(r, 50));
+
+  const combo = generarSemanaConMontacargas(diasActivos, personasPool, LIBRES, prevPorDia);
+  if(!combo){
+    const problemas = diagnosticar(diasActivos, personasPool, LIBRES);
+    let msg = '<div class="msg err"><b>No hay forma de armar esta semana.</b>';
+    if(problemas.length) msg += '<br><br>' + problemas.map(p=>'• '+p).join('<br>');
+    msg += '<br><br><b>Qué puedes hacer:</b><br>• Reducir la cantidad de personas libres el mismo día.'
+        + '<br>• Agregar personal activo en la pestaña 👥 Personal.'
+        + '<br>• Marcar algún día como feriado si no se trabaja.</div>';
+    document.getElementById('gen-msg').innerHTML = msg;
+    return;
+  }
+  const {porDia, montacargasPorDia} = combo;
+
+  const alertas = [];
+  diasActivos.forEach(dia=>{
+    const r = montacargasPorDia[dia];
+    if(r.sinUnidad.length) alertas.push(dia+': sin unidad → '+r.sinUnidad.join(', '));
+  });
+
+  RESULTADO = {fechaLunes, etiqueta, diasActivos, porDia, montacargasPorDia,
+               nivel:combo.nivel, prevPorDia:prevPorDia, editado:false};
+  MODO_EDICION = false;
+  guardarSemanaTrabajo();   // la rotación generada queda disponible en el celular
+  toast('gen-msg','Rotación generada para '+diasActivos.join(', ')+(FERIADOS && DIAS.some(d=>FERIADOS[d])?(' · Feriado: '+DIAS.filter(d=>FERIADOS[d]).join(', ')):''),'ok');
+  renderResultado(alertas);
+  document.querySelector('[data-tab="resultado"]').click();
+}
+
+/* ============================================================
+   RENDER: RESULTADO
+   ============================================================ */
+function altaDelDia(dia, posicionObj){
+  const idx = DIAS.indexOf(dia) % posicionObj.personas.length;
+  return posicionObj.personas[idx];
+}
+
+/* ============================================================
+   GRILLA CON EL FORMATO DE LA PLANTILLA ORIGINAL
+   Columnas: PASILLO | D/M | B.O 01 AL 14 | B.O 20 AL 23 | E/A y ALMACENAJE
+   Es la única fuente de verdad: la usan la vista en pantalla,
+   la imagen PNG y el Excel, para que los tres salgan idénticos.
+   ============================================================ */
+const COLUMNAS = ['PASILLO','D/M','B.O 01 AL 14','B.O 20 AL 23','E/A y ALMACENAJE'];
+
+function celda(dia, slotId){
+  if(!RESULTADO || !RESULTADO.porDia[dia]) return '';
+  const persona = RESULTADO.porDia[dia][slotId];
+  if(!persona) return '';
+  const mc = RESULTADO.montacargasPorDia[dia];
+  const u = mc.asignadas[slotId];
+  if(u != null) return persona + ' (' + u + ')';
+  // Sin número: puede ser porque su tarea no lleva montacargas (fila gris),
+  // o porque la flota no alcanzó. Son cosas distintas y se muestran distinto.
+  if(mc.noRequiere && mc.noRequiere[slotId]) return persona;
+  return persona + ' (SIN UNIDAD)';
+}
+function celdaCombo(dia, a, b){
+  const x = celda(dia,a), y = celda(dia,b);
+  if(x && y) return x + ' - ' + y;
+  return x || y || '';
+}
+
+// Devuelve las 6 filas de un día, con la misma disposición de la plantilla.
+function grillaDia(dia){
+  const alta = CONFIG.alta || [];
+  const nombreAlta = i => alta[i] ? altaDelDia(dia, alta[i]) : '';
+  const etiquetaAlta = i => alta[i] ? alta[i].posicion : '';
+
+  return [
+    {pasillo:'O/S', pasilloSpan:2, dm:celdaCombo(dia,'os0','os1'),
+     bo1:celda(dia,'bo1w'), bo1Span:5, bo2:celda(dia,'bo2w'), bo2Span:5,
+     ea:nombreAlta(0), eaLabel:etiquetaAlta(0)},
+    // Única fila gris en D/M: la línea gris de O/S.
+    {pasillo:null, dm:celda(dia,'os2'), dmGris:true,
+     ea:nombreAlta(1), eaLabel:etiquetaAlta(1)},
+    {pasillo:'41', dm:celda(dia,'p41'),
+     ea:nombreAlta(2), eaLabel:etiquetaAlta(2)},
+    {pasillo:'42', dm:celdaCombo(dia,'p42a','p42b'),
+     ea:'', eaLabel:''},
+    // Pasillo 43 va en blanco (no es fila gris).
+    {pasillo:'43', dm:celda(dia,'p43'), dmGris:false,
+     ea:celda(dia,'almacenar'), eaLabel:'ALMACENAR'},
+    {pasillo:'44', dm:celda(dia,'p44dm'),
+     bo1:celda(dia,'p44bo1'), bo2:celda(dia,'p44bo2'),
+     ea:celda(dia,'traspaletista'), eaLabel:'TRASPALETISTA', eaGris:true},
+  ];
+}
+
+let MODO_EDICION = false;
+
+function alternarEdicion(){
+  MODO_EDICION = !MODO_EDICION;
+  renderResultado();
+}
+
+// Cambia una persona en un puesto. Si esa persona ya estaba en otro puesto
+// ese mismo día, se INTERCAMBIAN (evita crear duplicados sin darse cuenta).
+function editarPuesto(dia, slotId, nuevo){
+  if(!RESULTADO) return;
+  const mapa = RESULTADO.porDia[dia];
+  const anterior = mapa[slotId] || null;
+
+  if(nuevo === ''){
+    delete mapa[slotId];
+  } else {
+    let otroSlot = null;
+    SLOTS.forEach(s=>{ if(s.id!==slotId && mapa[s.id]===nuevo) otroSlot = s.id; });
+    mapa[slotId] = nuevo;
+    if(otroSlot){
+      if(anterior) mapa[otroSlot] = anterior;   // intercambio limpio
+      else delete mapa[otroSlot];
+    }
+  }
+
+  // Recalcular montacargas del día con la asignación editada
+  RESULTADO.montacargasPorDia[dia] = asignarMontacargas(dia, mapa, LIBRES);
+  RESULTADO.editado = true;
+  renderResultado();
+  guardarSemanaTrabajo();   // la edición manual no se puede perder al recargar
+}
+
+function opcionesPersona(dia, slotId, actual){
+  const activos = CONFIG.personal.filter(p=>p.activo);
+  let html = '<option value="">— vacío —</option>';
+  activos.forEach(p=>{
+    // Marca visualmente por qué una opción es problemática, sin bloquearla:
+    // el usuario manda, pero informado.
+    const avisos = [];
+    if(LIBRES[p.nombre] && LIBRES[p.nombre][dia]) avisos.push(LIBRES[p.nombre][dia]);
+    if(p.puestos && p.puestos.indexOf(slotId) === -1) avisos.push('no aplica a este puesto');
+    const sel = (p.nombre===actual) ? ' selected' : '';
+    html += '<option value="'+p.nombre+'"'+sel+'>'+p.nombre
+          + (avisos.length?' ⚠ '+avisos.join(', '):'') + '</option>';
+  });
+  // si el actual no está en la lista (ej. se desactivó), igual mostrarlo
+  if(actual && !activos.some(p=>p.nombre===actual)){
+    html += '<option value="'+actual+'" selected>'+actual+' (inactivo)</option>';
+  }
+  return html;
+}
+
+function celdaEditable(dia, slotId, aud){
+  const persona = RESULTADO.porDia[dia][slotId] || '';
+  const problemas = aud.porSlot[dia+'|'+slotId] || [];
+  const cls = problemas.length ? ' class="conflicto"' : '';
+  const tip = problemas.length ? ' title="'+problemas.join(' · ')+'"' : '';
+  if(!MODO_EDICION){
+    const u = RESULTADO.montacargasPorDia[dia];
+    let txt = celda(dia, slotId);
+    return '<span'+cls+tip+'>'+(txt||'—')+'</span>';
+  }
+  return '<select'+cls+tip+' onchange="editarPuesto(\''+dia+'\',\''+slotId+'\',this.value)">'
+       + opcionesPersona(dia, slotId, persona) + '</select>';
+}
+
+// Igual que grillaDia pero con controles de edición y marcas de conflicto.
+function contenidoCelda(dia, slots, aud){
+  return slots.map(s=>celdaEditable(dia, s, aud)).join(MODO_EDICION?' ':' - ');
+}
+
+function renderResultado(alertas){
+  const cont = document.getElementById('resultado-tabla');
+  const msgCont = document.getElementById('resultado-msg');
+  if(!RESULTADO){ cont.innerHTML=''; return; }
+
+  const aud = auditar();
+
+  // ---- Mensajes de estado ----
+  let cab = '';
+  const repeticiones = aud.lista.filter(x=>x.tipo==='repite');
+  const otros = aud.lista.filter(x=>x.tipo!=='repite');
+
+  if(aud.lista.length === 0){
+    cab += '<div class="msg ok"><b>✔ Rotación limpia.</b> Nadie repite pasillo en la semana, nadie coincide con la semana pasada, y no hay montacargas duplicados.</div>';
+  } else {
+    if(repeticiones.length){
+      cab += '<div class="msg err"><b>⚠ '+repeticiones.length+' repetición(es) de pasillo en la semana</b> — marcadas en rojo en la tabla:<br>'
+           + repeticiones.map(x=>'• '+x.texto).join('<br>')
+           + '<br><small>Con '+CONFIG.personal.filter(p=>p.activo&&!p.puestos).length+' personas rotativas y '
+           + RESULTADO.diasActivos.length+' días, O/S y Pasillo 44 (3 cupos diarios cada uno) exigen '
+           + (3*RESULTADO.diasActivos.length)+' personas distintas cada uno: no siempre alcanza. '
+           + 'Usa <b>✏️ Editar</b> para ajustarlas.</small></div>';
+    }
+    if(otros.length){
+      cab += '<div class="msg err">'+otros.map(x=>'• '+x.texto).join('<br>')+'</div>';
+    }
+  }
+
+  const sinU = [];
+  RESULTADO.diasActivos.forEach(dia=>{
+    const r = RESULTADO.montacargasPorDia[dia];
+    if(r && r.sinUnidad && r.sinUnidad.length) sinU.push(dia+': '+r.sinUnidad.join(', '));
+  });
+  if(sinU.length){
+    cab += '<div class="msg err"><b>Sin montacargas disponible:</b><br>'+sinU.join('<br>')+'</div>';
+  } else {
+    cab += '<div class="msg ok">Todas las unidades cubiertas, sin duplicados.</div>';
+  }
+  if(RESULTADO.editado){
+    cab += '<div class="msg ok">✏️ Esta rotación tiene ediciones manuales. La imagen y el Excel salen con tus cambios.</div>';
+  }
+  msgCont.innerHTML = cab;
+
+  // ---- Tabla con el formato de la plantilla ----
+  let html = '<div class="row" style="margin:0 0 10px;">'
+    + '<button class="btn '+(MODO_EDICION?'':'secondary')+' small" onclick="alternarEdicion()">'
+    + (MODO_EDICION?'✔ Terminar edición':'✏️ Editar rotación')+'</button>'
+    + (MODO_EDICION?'<span class="sub" style="margin:0;align-self:center;">Cambia cualquier casilla. Si eliges a alguien que ya está en otro puesto ese día, se intercambian.</span>':'')
+    + '</div>';
+
+  html += construirTablaHTML(aud);
+  cont.innerHTML = html;
+}
+
+// Estructura de filas de la plantilla (una sola definición para todo).
+const FILAS_PLANTILLA = [
+  {pasillo:'O/S', span:2, dm:['os0','os1'], bo1:['bo1w'], bo1Span:5, bo2:['bo2w'], bo2Span:5, eaIdx:0},
+  {pasillo:null,          dm:['os2'], eaIdx:1, gris:true},
+  {pasillo:'41',          dm:['p41'], eaIdx:2},
+  {pasillo:'42',          dm:['p42a','p42b']},
+  {pasillo:'43',          dm:['p43'], eaSlot:'almacenar', eaLabel:'ALMACENAR'},
+  {pasillo:'44',          dm:['p44dm'], bo1:['p44bo1'], bo2:['p44bo2'], grisBO:true,
+   eaSlot:'traspaletista', eaLabel:'TRASPALETISTA', eaGris:true},
+];
+
+function construirTablaHTML(aud){
+  aud = aud || {porSlot:{}, lista:[]};
+  let html = '<div class="tablewrap"><table class="plantilla">';
+  html += '<thead><tr><th colspan="5" class="titulo">ROTACION DE LA SEMANA</th></tr><tr>'
+        + COLUMNAS.map(c=>'<th>'+c+'</th>').join('') + '</tr></thead><tbody>';
+
+  RESULTADO.diasActivos.forEach(dia=>{
+    html += '<tr class="dayhead"><td>'+dia+'</td><td>'+dia+'</td><td>'+dia+'</td><td>'+dia+'</td><td>'+dia+'</td></tr>';
+
+    FILAS_PLANTILLA.forEach(f=>{
+      html += '<tr>';
+      if(f.pasillo !== null){
+        html += '<td class="pasillo"'+(f.span?' rowspan="'+f.span+'"':'')+'>'+f.pasillo+'</td>';
+      }
+      html += '<td class="dm'+(f.gris?' gris':'')+'">'+contenidoCelda(dia, f.dm, aud)+'</td>';
+      if(f.bo1){
+        html += '<td'+(f.bo1Span?' rowspan="'+f.bo1Span+'"':'')+(f.grisBO?' class="gris"':'')+'>'
+              + contenidoCelda(dia, f.bo1, aud)+'</td>';
+      }
+      if(f.bo2){
+        html += '<td'+(f.bo2Span?' rowspan="'+f.bo2Span+'"':'')+(f.grisBO?' class="gris"':'')+'>'
+              + contenidoCelda(dia, f.bo2, aud)+'</td>';
+      }
+      let ea = '';
+      if(f.eaSlot) ea = contenidoCelda(dia, [f.eaSlot], aud);
+      else if(f.eaIdx !== undefined && CONFIG.alta[f.eaIdx]) ea = altaDelDia(dia, CONFIG.alta[f.eaIdx]);
+      const lbl = f.eaLabel || (f.eaIdx!==undefined && CONFIG.alta[f.eaIdx] ? CONFIG.alta[f.eaIdx].posicion : '');
+      html += '<td class="ea'+(f.eaGris?' gris':'')+'">'+ea+(lbl?'<span class="ealabel">'+lbl+'</span>':'')+'</td>';
+      html += '</tr>';
+    });
+  });
+
+  // Los feriados se deducen de la propia semana (días que no se trabajaron),
+  // así el histórico muestra los suyos y no los de la semana actual.
+  DIAS.filter(d=>RESULTADO.diasActivos.indexOf(d) === -1).forEach(d=>{
+    html += '<tr class="dayhead"><td colspan="5">'+d+' · FERIADO — nadie trabaja</td></tr>';
+  });
+
+  html += '</tbody></table></div>';
+  return html;
+}
+
+/* ============================================================
+   GUARDAR SEMANA EN HISTORIAL (para comparar próxima vez)
+   ============================================================ */
+async function guardarSemanaHistorial(){
+  if(!RESULTADO){ toast('resultado-msg','Genera primero la rotación.','err'); return; }
+  HISTORIAL = HISTORIAL.filter(h=>h.fechaLunes !== RESULTADO.fechaLunes);
+  // Se guarda la semana COMPLETA (días, montacargas y estantería alta) para
+  // poder mostrarla y descargarla después tal como se publicó.
+  HISTORIAL.push({
+    fechaLunes: RESULTADO.fechaLunes,
+    etiqueta: RESULTADO.etiqueta,
+    porDia: RESULTADO.porDia,
+    diasActivos: RESULTADO.diasActivos,
+    montacargasPorDia: RESULTADO.montacargasPorDia,
+    alta: JSON.parse(JSON.stringify(CONFIG.alta || [])),
+    editado: !!RESULTADO.editado
+  });
+  await guardarHistorial();
+  toast('resultado-msg','Semana guardada en el historial ✔','ok');
+}
+
+/* ------------------------------------------------------------
+   Ejecuta una función como si la semana guardada fuera la activa.
+   Así la vista previa, el PNG y el Excel del histórico salen con
+   exactamente el mismo código que la rotación actual — sin copias
+   paralelas que puedan quedar desalineadas.
+   ------------------------------------------------------------ */
+function conSemana(sem, fn){
+  const bkR = RESULTADO, bkAlta = CONFIG.alta, bkModo = MODO_EDICION;
+  const dias = sem.diasActivos || DIAS.filter(d=>sem.porDia && sem.porDia[d]);
+  let mc = sem.montacargasPorDia;
+  if(!mc){
+    // Semanas guardadas por versiones antiguas: se recalcula al vuelo.
+    mc = {};
+    dias.forEach(d=>{ mc[d] = asignarMontacargas(d, sem.porDia[d], LIBRES); });
+  }
+  RESULTADO = {fechaLunes:sem.fechaLunes, etiqueta:sem.etiqueta, diasActivos:dias,
+               porDia:sem.porDia, montacargasPorDia:mc, prevPorDia:null, editado:false};
+  if(sem.alta && sem.alta.length) CONFIG.alta = sem.alta;
+  MODO_EDICION = false;
+  try { return fn(); }
+  finally { RESULTADO = bkR; CONFIG.alta = bkAlta; MODO_EDICION = bkModo; }
+}
+
+let HIST_ABIERTA = null;
+function verHistorial(fecha){
+  HIST_ABIERTA = (HIST_ABIERTA === fecha) ? null : fecha;
+  renderHistorial();
+}
+function descargarHistorialPNG(fecha){
+  const sem = HISTORIAL.find(h=>h.fechaLunes===fecha);
+  if(sem) conSemana(sem, exportarPNG);
+}
+function descargarHistorialExcel(fecha){
+  const sem = HISTORIAL.find(h=>h.fechaLunes===fecha);
+  if(sem) conSemana(sem, exportarExcel);
+}
+
+/* ============================================================
+   HISTORIAL
+   ============================================================ */
+function renderHistorial(){
+  const cont = document.getElementById('historial-lista');
+  if(!cont) return;
+  if(!HISTORIAL.length){ cont.innerHTML = '<div class="sub">Aún no hay semanas guardadas.</div>'; return; }
+  const ordenado = HISTORIAL.slice().sort((a,b)=>b.fechaLunes.localeCompare(a.fechaLunes));
+
+  cont.innerHTML = ordenado.map((h, idx)=>{
+    const abierta = (HIST_ABIERTA === h.fechaLunes);
+    const dias = h.diasActivos || DIAS.filter(d=>h.porDia && h.porDia[d]);
+    let bloque = `
+      <div style="border-bottom:1px solid var(--line);padding:10px 0;">
+        <div class="flexrow">
+          <div>
+            <b>${h.etiqueta||h.fechaLunes}</b>
+            <span class="tag">${h.fechaLunes}</span>
+            ${idx===0?'<span class="pill ok">más reciente</span>':''}
+            ${h.editado?'<span class="pill warn">editada</span>':''}
+            <div class="sub" style="margin:2px 0 0;">${dias.length} día(s): ${dias.join(', ')}</div>
+          </div>
+          <div class="row" style="margin:0;">
+            <button class="btn secondary small" onclick="verHistorial('${h.fechaLunes}')">${abierta?'▲ Ocultar':'👁 Ver'}</button>
+            <button class="btn secondary small" onclick="descargarHistorialPNG('${h.fechaLunes}')">🖼 PNG</button>
+            <button class="btn secondary small" onclick="descargarHistorialExcel('${h.fechaLunes}')">⬇ Excel</button>
+            <button class="btn danger small" onclick="eliminarHistorial('${h.fechaLunes}')">✕</button>
+          </div>
+        </div>`;
+    if(abierta){
+      bloque += '<div style="margin-top:10px;">' + conSemana(h, ()=>construirTablaHTML()) + '</div>';
+    }
+    bloque += '</div>';
+    return bloque;
+  }).join('');
+}
+async function eliminarHistorial(fecha){
+  HISTORIAL = HISTORIAL.filter(h=>h.fechaLunes!==fecha);
+  await guardarHistorial();
+}
+
+/* ============================================================
+   EXPORTAR A EXCEL (SheetJS)
+   ============================================================ */
+/* ---------- EXCEL con el mismo formato de la plantilla ---------- */
+function exportarExcel(){
+  if(!RESULTADO){ toast('resultado-msg','Genera primero la rotación.','err'); return; }
+
+  const rows = [];
+  const merges = [];
+  rows.push(['ROTACION DE LA SEMANA','','','','']);
+  merges.push({s:{r:0,c:0}, e:{r:0,c:4}});
+  rows.push(COLUMNAS.slice());
+
+  RESULTADO.diasActivos.forEach(dia=>{
+    rows.push([dia,dia,dia,dia,dia]);
+    const g = grillaDia(dia);
+    const primeraFila = rows.length; // índice de la 1ª fila del bloque del día
+
+    g.forEach((f,i)=>{
+      const r = [];
+      r.push(f.pasillo !== null ? f.pasillo : '');
+      r.push(f.dm || '');
+      r.push(f.bo1 !== undefined ? (f.bo1||'') : '');
+      r.push(f.bo2 !== undefined ? (f.bo2||'') : '');
+      r.push((f.ea||'') + (f.eaLabel ? (f.ea?' · ':'')+f.eaLabel : ''));
+      rows.push(r);
+    });
+
+    // combinaciones que replican la plantilla
+    merges.push({s:{r:primeraFila,   c:0}, e:{r:primeraFila+1, c:0}}); // O/S
+    merges.push({s:{r:primeraFila,   c:2}, e:{r:primeraFila+4, c:2}}); // B.O 01-14 semana
+    merges.push({s:{r:primeraFila,   c:3}, e:{r:primeraFila+4, c:3}}); // B.O 20-23 semana
+  });
+
+  DIAS.filter(d=>FERIADOS[d]).forEach(d=>{
+    const r = rows.length;
+    rows.push([d+' · FERIADO — nadie trabaja','','','','']);
+    merges.push({s:{r:r,c:0}, e:{r:r,c:4}});
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!merges'] = merges;
+  ws['!cols'] = [{wch:12},{wch:34},{wch:20},{wch:20},{wch:26}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Rotacion');
+  XLSX.writeFile(wb, 'Rotacion_'+RESULTADO.fechaLunes+'.xlsx');
+}
+
+/* ---------- IMAGEN PNG (dibujada a mano, sin librerías) ----------
+   Se dibuja directamente en un canvas para que salga nítida y no
+   dependa de ninguna CDN. Ideal para compartir por WhatsApp.       */
+function exportarPNG(){
+  if(!RESULTADO){ toast('resultado-msg','Genera primero la rotación.','err'); return; }
+
+  const NAVY='#003087', NAVY2='#0d3472', BORDE='#7f9bc9';
+  const PASILLO_BG='#dbe5f6', GRIS='#d9d9d9';
+  const W=[90, 330, 180, 180, 230];          // ancho de cada columna
+  const TOTAL=W.reduce((a,b)=>a+b,0);
+  const PAD=18, H_TIT=42, H_HEAD=30, H_DIA=28, H_FILA=27;
+  const dias=RESULTADO.diasActivos;
+  const H_BLOQUE=H_DIA + 6*H_FILA;
+  const feriados=DIAS.filter(d=>FERIADOS[d]);
+  const H_PIE=26;
+  const H = PAD*2 + H_TIT + H_HEAD + dias.length*H_BLOQUE + feriados.length*H_DIA + H_PIE;
+
+  const escala = 2; // el doble de resolución = imagen nítida
+  const cv=document.createElement('canvas');
+  cv.width=(TOTAL+PAD*2)*escala; cv.height=H*escala;
+  const g=cv.getContext('2d');
+  g.scale(escala,escala);
+  g.textBaseline='middle';
+
+  g.fillStyle='#ffffff'; g.fillRect(0,0,TOTAL+PAD*2,H);
+
+  const X=[]; let acc=PAD; W.forEach(w=>{ X.push(acc); acc+=w; });
+
+  function caja(x,y,w,h,bg){
+    if(bg){ g.fillStyle=bg; g.fillRect(x,y,w,h); }
+    g.strokeStyle=BORDE; g.lineWidth=1; g.strokeRect(x,y,w,h);
+  }
+  function texto(t,x,y,w,h,opts){
+    opts=opts||{};
+    if(!t) return;
+    const s=String(t);
+    g.fillStyle=opts.color||'#1a2233';
+    // Si no cabe, se REDUCE la letra (no se corta el nombre: un nombre a
+    // medias en una plantilla de turnos es peor que una letra más chica).
+    let size = opts.size||12.5;
+    const bold = opts.bold?'bold ':'';
+    g.font = bold+size+'px Arial, Helvetica, sans-serif';
+    while(g.measureText(s).width > w-10 && size > 6){
+      size -= 0.5;
+      g.font = bold+size+'px Arial, Helvetica, sans-serif';
+    }
+    const al=opts.align||'center';
+    g.textAlign=al;
+    const tx = al==='center' ? x+w/2 : (al==='right' ? x+w-7 : x+7);
+    g.fillText(s, tx, y+h/2 + (opts.dy||0));
+  }
+
+  let y=PAD;
+  // Título
+  caja(PAD,y,TOTAL,H_TIT,NAVY2);
+  texto('ROTACION DE LA SEMANA', PAD, y, TOTAL, H_TIT, {bold:true,size:19,color:'#fff'});
+  // subtítulo con la etiqueta de la semana
+  y+=H_TIT;
+
+  // Encabezados
+  COLUMNAS.forEach((c,i)=>{ caja(X[i],y,W[i],H_HEAD,NAVY);
+    texto(c,X[i],y,W[i],H_HEAD,{bold:true,size:12,color:'#fff'}); });
+  y+=H_HEAD;
+
+  dias.forEach(dia=>{
+    // fila del día
+    COLUMNAS.forEach((c,i)=>{ caja(X[i],y,W[i],H_DIA,NAVY);
+      texto(dia,X[i],y,W[i],H_DIA,{bold:true,size:12.5,color:'#fff'}); });
+    y+=H_DIA;
+
+    const filas=grillaDia(dia);
+    const yBloque=y;
+
+    filas.forEach((f,i)=>{
+      const yf=y+i*H_FILA;
+      // PASILLO (la primera celda abarca 2 filas)
+      if(f.pasillo!==null){
+        const h=(f.pasilloSpan||1)*H_FILA;
+        caja(X[0],yf,W[0],h,PASILLO_BG);
+        texto(f.pasillo,X[0],yf,W[0],h,{bold:true,size:12.5,color:NAVY});
+      }
+      // D/M (solo la línea gris de O/S va en gris; el 43 va en blanco)
+      caja(X[1],yf,W[1],H_FILA, f.dmGris?GRIS:null);
+      texto(f.dm,X[1],yf,W[1],H_FILA,{bold:true,size:12.5});
+      // B.O 01 AL 14 / B.O 20 AL 23
+      if(f.bo1!==undefined){
+        const h=(f.bo1Span||1)*H_FILA;
+        caja(X[2],yf,W[2],h,i===5?GRIS:null);
+        texto(f.bo1,X[2],yf,W[2],h,{bold:true,size:12.5});
+      }
+      if(f.bo2!==undefined){
+        const h=(f.bo2Span||1)*H_FILA;
+        caja(X[3],yf,W[3],h,i===5?GRIS:null);
+        texto(f.bo2,X[3],yf,W[3],h,{bold:true,size:12.5});
+      }
+      // E/A y ALMACENAJE: nombre a la derecha, etiqueta pequeña a la izquierda
+      caja(X[4],yf,W[4],H_FILA, f.eaGris?GRIS:null);
+      if(f.eaLabel) texto(f.eaLabel,X[4],yf,W[4],H_FILA,{align:'left',size:9.5,color:'#6b7280'});
+      if(f.ea)      texto(f.ea,     X[4],yf,W[4],H_FILA,{align:'right',bold:true,size:11.5});
+    });
+    y = yBloque + 6*H_FILA;
+  });
+
+  feriados.forEach(d=>{
+    caja(PAD,y,TOTAL,H_DIA,GRIS);
+    texto(d+' · FERIADO — nadie trabaja',PAD,y,TOTAL,H_DIA,{bold:true,size:12.5,color:'#444'});
+    y+=H_DIA;
+  });
+
+  // Pie con la fecha de la semana
+  texto((RESULTADO.etiqueta||'')+'   ·   CENDIS Farmatodo', PAD, y, TOTAL, H_PIE,
+        {align:'left',size:10.5,color:'#6b7280'});
+
+  cv.toBlob(function(blob){
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download='Rotacion_'+RESULTADO.fechaLunes+'.png';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 2000);
+  }, 'image/png');
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function renderAll(){
+  renderPersonal();
+  renderAlta();
+  renderFijas();
+  renderConfigInputs();
+  renderTablaLibres();
+  renderHistorial();
+}
+
+function avisarMigracion(nombres){
+  const el = document.getElementById('aviso-migracion');
+  if(!el) return;
+  el.innerHTML = '<div class="msg ok">✔ Se agregó a tu personal: <b>'+nombres.join(', ')
+    + '</b>. Tu configuración guardada era anterior y no lo tenía, por eso la rotación '
+    + 'podía dejar puestos vacíos. Revisa la pestaña 👥 Personal y vuelve a generar la rotación.</div>';
+}
+
+cargarLocal();
+renderAll();
+if(CONFIG.__migrados){
+  avisarMigracion(CONFIG.__migrados);
+  delete CONFIG.__migrados;
+  guardarConfig();
+}
+fbInit();
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</body>
+</html>
